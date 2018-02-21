@@ -18,3 +18,11 @@ C:\Users\Fezzi\Documents\MATFYZ\GitHub\Pacman_Ultimate\PacManUltimate\obj\Debug\
 C:\Users\Fezzi\Documents\MATFYZ\GitHub\Pacman_Ultimate\PacManUltimate\obj\Debug\PacManUltimate.csproj.ResolveComReference.cache
 C:\Users\Fezzi\Documents\MATFYZ\GitHub\Pacman_Ultimate\PacManUltimate\obj\Debug\PacManUltimate.exe
 C:\Users\Fezzi\Documents\MATFYZ\GitHub\Pacman_Ultimate\PacManUltimate\obj\Debug\PacManUltimate.pdb
+C:\Users\Fezzi\Documents\MATFYZ\GitHub\Pacman_Ultimate\PacManUltimate\bin\Debug\PacManUltimate.exe
+C:\Users\Fezzi\Documents\MATFYZ\GitHub\Pacman_Ultimate\PacManUltimate\bin\Debug\PacManUltimate.pdb
+C:\Users\Fezzi\Documents\MATFYZ\GitHub\Pacman_Ultimate\PacManUltimate\bin\Debug\Interop.WMPLib.dll
+C:\Users\Fezzi\Documents\MATFYZ\GitHub\Pacman_Ultimate\PacManUltimate\bin\Debug\AxInterop.WMPLib.dll
+C:\Users\Fezzi\Documents\MATFYZ\GitHub\Pacman_Ultimate\PacManUltimate\obj\Debug\PacManUltimate.csprojResolveAssemblyReference.cache
+C:\Users\Fezzi\Documents\MATFYZ\GitHub\Pacman_Ultimate\PacManUltimate\obj\Debug\PacManUltimate.PacManUltimate.resources
+C:\Users\Fezzi\Documents\MATFYZ\GitHub\Pacman_Ultimate\PacManUltimate\obj\Debug\PacManUltimate.Properties.Resources.resources
+C:\Users\Fezzi\Documents\MATFYZ\GitHub\Pacman_Ultimate\PacManUltimate\obj\Debug\PacManUltimate.csproj.GenerateResource.Cache

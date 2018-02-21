@@ -69,6 +69,7 @@
             this.Pacman.Size = new System.Drawing.Size(337, 66);
             this.Pacman.TabIndex = 3;
             this.Pacman.Text = "PAC-MAN";
+            this.Pacman.Visible = false;
             // 
             // ultimate
             // 
@@ -81,6 +82,7 @@
             this.ultimate.Size = new System.Drawing.Size(267, 36);
             this.ultimate.TabIndex = 4;
             this.ultimate.Text = "- ULTIMATE -";
+            this.ultimate.Visible = false;
             // 
             // copyright
             // 
@@ -92,6 +94,7 @@
             this.copyright.Size = new System.Drawing.Size(179, 17);
             this.copyright.TabIndex = 5;
             this.copyright.Text = "CopyRight Filip Horký 2017";
+            this.copyright.Visible = false;
             // 
             // PressEnter
             // 
@@ -104,10 +107,12 @@
             this.PressEnter.Size = new System.Drawing.Size(256, 126);
             this.PressEnter.TabIndex = 6;
             this.PressEnter.Text = "INSERT COIN\r\n                 \r\n   press enter\r\n";
+            this.PressEnter.Visible = false;
             // 
             // openFileDialog1
             // 
-            this.openFileDialog1.FileName = "openFileDialog1";
+            this.openFileDialog1.FileName = "Choose_Map";
+            this.openFileDialog1.InitialDirectory = System.IO.Directory.GetCurrentDirectory();
             // 
             // selectMap
             // 
@@ -123,6 +128,7 @@
             this.selectMap.Click += new System.EventHandler(this.selectMap_Click);
             this.selectMap.MouseLeave += new System.EventHandler(this.HoverLeave);
             this.selectMap.MouseHover += new System.EventHandler(this.Hover);
+            this.selectMap.Visible = false;
             // 
             // OrgGame
             // 
@@ -138,6 +144,7 @@
             this.OrgGame.Click += new System.EventHandler(this.OrgGame_Click);
             this.OrgGame.MouseLeave += new System.EventHandler(this.HoverLeave);
             this.OrgGame.MouseHover += new System.EventHandler(this.Hover);
+            this.OrgGame.Visible = false;
             // 
             // Settings
             // 
@@ -153,6 +160,7 @@
             this.Settings.Click += new System.EventHandler(this.Settings_Click);
             this.Settings.MouseLeave += new System.EventHandler(this.HoverLeave);
             this.Settings.MouseHover += new System.EventHandler(this.Hover);
+            this.Settings.Visible = false;
             // 
             // Updater
             // 
@@ -169,6 +177,7 @@
             this.EscLabel.Size = new System.Drawing.Size(185, 25);
             this.EscLabel.TabIndex = 11;
             this.EscLabel.Text = "Press ESC to return";
+            this.EscLabel.Visible = false;
             // 
             // HighScr
             // 
@@ -184,6 +193,7 @@
             this.HighScr.Click += new System.EventHandler(this.HighScr_Click);
             this.HighScr.MouseLeave += new System.EventHandler(this.HoverLeave);
             this.HighScr.MouseHover += new System.EventHandler(this.Hover);
+            this.HighScr.Visible = false;
             // 
             // VS
             // 
@@ -199,6 +209,7 @@
             this.VS.Click += new System.EventHandler(this.VS_Click);
             this.VS.MouseLeave += new System.EventHandler(this.HoverLeave);
             this.VS.MouseHover += new System.EventHandler(this.Hover);
+            this.VS.Visible = false;
             // 
             // HighScoreLabel
             // 
@@ -263,6 +274,7 @@
             this.MusicButton.TabIndex = 18;
             this.MusicButton.Text = "MUSIC";
             this.MusicButton.Click += new System.EventHandler(this.MusicButton_Click);
+            this.MusicButton.Visible = false;
             // 
             // SoundsButton
             // 
@@ -279,6 +291,7 @@
             this.SoundsButton.TabIndex = 19;
             this.SoundsButton.Text = "SOUND";
             this.SoundsButton.Click += new System.EventHandler(this.SoundsButton_Click);
+            this.SoundsButton.Visible = false;
             // 
             // GameOverLabel
             // 
@@ -333,8 +346,8 @@
             this.TryAgainBut.Size = new System.Drawing.Size(148, 31);
             this.TryAgainBut.TabIndex = 23;
             this.TryAgainBut.Text = "TRY AGAIN";
-            this.TryAgainBut.Visible = false;
             this.TryAgainBut.Click += new System.EventHandler(this.selectMap_Click);
+            this.TryAgainBut.Visible = false;
             // 
             // AdvancedLdBut
             // 
@@ -350,8 +363,8 @@
             this.AdvancedLdBut.Size = new System.Drawing.Size(230, 31);
             this.AdvancedLdBut.TabIndex = 24;
             this.AdvancedLdBut.Text = "ADVANCED LOAD";
-            this.AdvancedLdBut.Visible = false;
             this.AdvancedLdBut.Click += new System.EventHandler(this.AdvancedLdBut_Click);
+            this.AdvancedLdBut.Visible = false;
             // 
             // TypeSymbols
             // 
@@ -431,6 +444,7 @@
             this.Name = "PacManUltimate";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Pac-Man Ultimate";
+
             //This part should be executed only once at the beggining of the game as components.clear does not erase
             //form's EventHandler and keyHandler which will cause existance of multiple handlers at the same time
             //which will result in misfunctions in menu and throughout the game during pressing keys and teleporting
