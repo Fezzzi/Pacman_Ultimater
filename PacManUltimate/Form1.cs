@@ -16,6 +16,8 @@ namespace PacManUltimate
     {
         //----------VARIABLES BLOCK-----------------------------------------------------------
 
+        List<Label> activeElements = new List<Label>();
+
         int HighScore = -1, keyTicks = 5, Score, CollectedDots, Lives, munch, GhostsEaten, ticks;
         int Level, SoundTick, Score2, FreeGhost, GhostRelease, EatEmTimer, keyCountdown1, keyCountdown2;
         bool gameOn = false, Player2 = false, keyPressed1, keyPressed2;
@@ -48,189 +50,151 @@ namespace PacManUltimate
             menu = "Start";
             Menu();
         }
-        
-        private void Menu()
+
+        private new void Menu()
         {
             //Function that makes Menu work by simple enabling and disabling visibility of selected controls
             //depending on the part of menu the player is in
+
+            for (int i = 0; i < activeElements.Count; i++)
+                activeElements[i].Visible = false;
+
+            activeElements = new List<Label>();
             switch (menu)
             {
-                case "Start":
-                    PressEnter.Visible = true;
-                    Pacman.Visible = true;
-                    ultimate.Visible = true;
-                    copyright.Visible = true;
-                    selectMap.Visible = false;
-                    OrgGame.Visible = false;
-                    Settings.Visible = false;
-                    EscLabel.Visible = false;
-                    HighScr.Visible = false;
-                    VS.Visible = false;
-                    MusicButton.Visible = false;
-                    SoundsButton.Visible = false;
-                    break;
+                default:                            //case "Start"
+                    Menu_Default(); break;
 
                 case "Menu":
-                    PressEnter.Visible = false;
-                    Pacman.Visible = false;
-                    ultimate.Visible = false;
-                    copyright.Visible = false;
+                    Menu_MainMenu(); break;
 
-                    selectMap.Visible = true;
-                    OrgGame.Visible = true;
-                    Settings.Visible = true;
-                    EscLabel.Visible = true;
-                    HighScr.Visible = true;
-                    VS.Visible = true;
-
-                    HighScoreLabel.Visible = false;
-                    HighScoreNum.Visible = false;
-                    ScoreNum.Visible = false;
-                    ScoreLabel.Visible = false;
-                    GameOverLabel.Visible = false;
-                    MusicButton.Visible = false;
-                    SoundsButton.Visible = false;
-
-                    ErrorLdMap.Visible = false;
-                    ErrorInfo.Visible = false;
-                    AdvancedLdBut.Visible = false;
-                    TryAgainBut.Visible = false;
-                    TypedSymbols.Visible = false;
-                    TypeSymbols.Visible = false;
-                    TypeHint.Visible = false;
-                    break;
-
-                case "Game":
-                    selectMap.Visible = false;
-                    OrgGame.Visible = false;
-                    Settings.Visible = false;
-                    EscLabel.Visible = false;
-                    HighScr.Visible = false;
-                    VS.Visible = false;
+                case "Game":                        // Don't have to do anything special, automatically sets visibility of all to false
                     break;
 
                 case "SelectMap":
-                    selectMap.Visible = false;
-                    OrgGame.Visible = false;
-                    Settings.Visible = false;
-                    HighScr.Visible = false;
-                    VS.Visible = false;
-                    TypeSymbols.Visible = false;
-                    TypedSymbols.Visible = false;
-                    TypeHint.Visible = false;
-
-                    ErrorLdMap.Visible = true;
-                    ErrorInfo.Visible = true;
-                    AdvancedLdBut.Visible = true;
-                    TryAgainBut.Visible = true;
-                    break;
+                    Menu_SelectMap(); break;
 
                 case "HighScore":
-                    //It is neccesary to disable visibility of all the controls that don't have default visibility set to false here
-                    //as the HighScore is accessed right after the game has ended so all of the controls have been loaded as new with
-                    //their default settings
-                    PressEnter.Visible = false;
-                    Pacman.Visible = false;
-                    ultimate.Visible = false;
-                    copyright.Visible = false;
-                    selectMap.Visible = false;
-                    OrgGame.Visible = false;
-                    Settings.Visible = false;
-                    HighScr.Visible = false;
-                    VS.Visible = false;
-                    SoundsButton.Visible = false;
-                    MusicButton.Visible = false;
-                    ErrorLdMap.Visible = false;
-                    ErrorInfo.Visible = false;
-                    //Two branches depending on the mode player has chosen - normal x VS
-                    if (!Player2)
-                    {
-                        if (Score != 0)
-                        {
-                            GameOverLabel.Visible = true;
-                            GameOverLabel.Text = "GAME OVER";
-                            GameOverLabel.ForeColor = Color.Red;
-                            GameOverLabel.Location = new Point(52, 33);
-                            ScoreLabel.Visible = true;
-                            HighScoreLabel.Text = "Your Score";
-                            ScoreNum.Visible = true;
-                            ScoreNum.Text = Score.ToString();
-                        }
-                        if (HighScore == -1)
-                        {
-                            //In case the HighScore is not loaded yet (value is -1) do so
-                            HighScoreClass hscr = new HighScoreClass();
-                            HighScore = hscr.LoadHighScore();
-                        }
-                        HighScoreLabel.Visible = true;
-                        HighScoreLabel.Text = "Highest Score";
-                        HighScoreLabel.ForeColor = Color.Yellow;
-                        HighScoreNum.Visible = true;
-                        HighScoreNum.ForeColor = Color.Yellow;
-                        HighScoreNum.Text = HighScore.ToString();
-                    }
-                    else
-                    {
-                        //Game selects the winner as the pleyer with highest score
-                        //In case of tie chooses the winner by remaing pacman lives
-                        if (Score < Score2 || (Score == Score2 && Lives <= 0))
-                        {
-                            GameOverLabel.Visible = true;
-                            GameOverLabel.Text = "GHOSTS WIN";
-                            GameOverLabel.ForeColor = Color.Red;
-                            GameOverLabel.Location = new Point(36, 33);
-                            HighScoreLabel.Text = "2UP";
-                            HighScoreLabel.ForeColor = Color.Red;
-                            HighScoreNum.Text = Score2.ToString();
-                            HighScoreNum.ForeColor = Color.Red;
-                            ScoreLabel.Text = "1UP";
-                            ScoreNum.Text = Score.ToString();
-                        }
-                        else
-                        {
-                            GameOverLabel.Visible = true;
-                            GameOverLabel.Text = "PACMAN WINS";
-                            GameOverLabel.ForeColor = Color.Yellow;
-                            GameOverLabel.Location = new Point(34, 33);
-                            HighScoreLabel.Text = "1UP";
-                            HighScoreNum.Text = Score.ToString();
-                            ScoreLabel.Text = "2UP";
-                            ScoreNum.Text = Score2.ToString();
-                        }
-                        ScoreLabel.Visible = true;
-                        ScoreNum.Visible = true;
-                        HighScoreLabel.Visible = true;
-                        HighScoreNum.Visible = true;
-                    }
-                    //It is necessary to set scre and player boolean in order to be able to access default Highscore
-                    //page later on from menu
-                    Score = 0;
-                    Player2 = false;
-                    break;
+                    Menu_HighScore(); break;
 
                 case "Settings":
-                    selectMap.Visible = false;
-                    OrgGame.Visible = false;
-                    Settings.Visible = false;
-                    HighScr.Visible = false;
-                    VS.Visible = false;
-                    //Buttons load with color depending on associated booleans
-                    MusicButton.Visible = true;
-                    if (Music)
-                        MusicButton.BackColor = Color.Yellow;
-                    else
-                        MusicButton.BackColor = Color.Gray;
-
-                    SoundsButton.Visible = true;
-                    if (Sound)
-                        SoundsButton.BackColor = Color.Yellow;
-                    else
-                        SoundsButton.BackColor = Color.Gray;
-                    break;
-
-                default:
-                    break;
+                    Menu_Settings(); break;
             }
+
+            for (int i = 0; i < activeElements.Count; i++)
+                activeElements[i].Visible = true;
+        }
+
+        private void Menu_Default()
+        {
+            activeElements.Add(PressEnter);
+            activeElements.Add(Pacman);
+            activeElements.Add(ultimate);
+            activeElements.Add(copyright);
+        }
+
+        private void Menu_MainMenu()
+        {
+            activeElements.Add(selectMap);
+            activeElements.Add(OrgGame);
+            activeElements.Add(Settings);
+            activeElements.Add(EscLabel);
+            activeElements.Add(HighScr);
+            activeElements.Add(VS);
+        }
+
+        private void Menu_SelectMap()
+        {
+            activeElements.Add(ErrorLdMap);
+            activeElements.Add(ErrorInfo);
+            activeElements.Add(AdvancedLdBut);
+            activeElements.Add(TryAgainBut);
+        }
+
+        private void Menu_HighScore()
+        {
+            activeElements.Add(GameOverLabel);
+            activeElements.Add(ScoreLabel);
+            activeElements.Add(ScoreNum);
+            activeElements.Add(HighScoreLabel);
+            activeElements.Add(HighScoreNum);
+
+            //Two branches depending on the mode player has chosen - normal x VS
+            if (!Player2)
+            {
+                if (Score != 0)
+                {
+                    GameOverLabel.Text = "GAME OVER";
+                    GameOverLabel.ForeColor = Color.Red;
+                    GameOverLabel.Location = new Point(52, 33);
+                    ScoreLabel.Text = "Your Score";
+                    ScoreNum.Text = Score.ToString();
+                }
+                else
+                {
+                    ScoreLabel.Text = "";
+                    ScoreNum.Text = "";
+                    GameOverLabel.Text = "";
+                }
+                if (HighScore == -1)
+                {
+                    //In case the HighScore is not loaded yet (value is -1) do so
+                    HighScoreClass hscr = new HighScoreClass();
+                    HighScore = hscr.LoadHighScore();
+                }
+                HighScoreLabel.Text = "Highest Score";
+                HighScoreLabel.ForeColor = Color.Yellow;
+                HighScoreNum.ForeColor = Color.Yellow;
+                HighScoreNum.Text = HighScore.ToString();
+            }
+            else
+            {
+                //Game selects the winner as the pleyer with highest score
+                //In case of tie chooses the winner by remaing pacman lives
+                if (Score < Score2 || (Score == Score2 && Lives <= 0))
+                {
+                    GameOverLabel.Text = "GHOSTS WIN";
+                    GameOverLabel.ForeColor = Color.Red;
+                    GameOverLabel.Location = new Point(36, 33);
+                    HighScoreLabel.Text = "2UP";
+                    HighScoreLabel.ForeColor = Color.Red;
+                    HighScoreNum.Text = Score2.ToString();
+                    HighScoreNum.ForeColor = Color.Red;
+                    ScoreLabel.Text = "1UP";
+                    ScoreNum.Text = Score.ToString();
+                }
+                else
+                {
+                    GameOverLabel.Text = "PACMAN WINS";
+                    GameOverLabel.ForeColor = Color.Yellow;
+                    GameOverLabel.Location = new Point(34, 33);
+                    HighScoreLabel.Text = "1UP";
+                    HighScoreNum.Text = Score.ToString();
+                    ScoreLabel.Text = "2UP";
+                    ScoreNum.Text = Score2.ToString();
+                }
+            }
+            //It is necessary to set scre and player boolean in order to be able to access default Highscore
+            //page later on from menu
+            Score = 0;
+            Player2 = false;
+        }
+
+        private void Menu_Settings()
+        {
+            activeElements.Add(MusicButton);
+            activeElements.Add(SoundsButton);
+
+            //Buttons load with color depending on associated booleans
+            if (Music)
+                MusicButton.BackColor = Color.Yellow;
+            else
+                MusicButton.BackColor = Color.Gray;
+
+            if (Sound)
+                SoundsButton.BackColor = Color.Yellow;
+            else
+                SoundsButton.BackColor = Color.Gray;
         }
 
         private void OrgGame_Click(object sender, EventArgs e)
@@ -245,9 +209,12 @@ namespace PacManUltimate
 
         private void AdvancedLdBut_Click(object sender, EventArgs e)
         {
-            TypeSymbols.Visible = true;
-            TypedSymbols.Visible = true;
-            TypeHint.Visible = true;
+            activeElements.Add(TypeSymbols);
+            activeElements.Add(TypedSymbols);
+            TypedSymbols.Text = "";
+            activeElements.Add(TypeHint);
+            for (int i = 0; i < activeElements.Count; i++)
+                activeElements[i].Visible = true;
         }
 
         private void selectMap_Click(object sender, EventArgs e)
