@@ -55,7 +55,9 @@
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
     <Compile Include="HighScoreClass.cs" />
+    <Compile Include="IEntitiesAI.cs" />
     <Compile Include="LoadMap.cs" />
+    <Compile Include="MenuSupportClass.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Tile.cs" />

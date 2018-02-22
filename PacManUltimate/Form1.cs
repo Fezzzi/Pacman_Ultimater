@@ -14,15 +14,17 @@ namespace PacManUltimate
 {
     public partial class PacManUltimate : Form
     {
-        //----------VARIABLES BLOCK-----------------------------------------------------------
+        #region - VARIABLES Block -
 
-        List<Label> activeElements = new List<Label>();
+        enum mn { game = 0, selectmap, settings, vs, highscore, start, submenu = 6 };
 
         int HighScore = -1, keyTicks = 5, Score, CollectedDots, Lives, munch, GhostsEaten, ticks;
         int Level, SoundTick, Score2, FreeGhost, GhostRelease, EatEmTimer, keyCountdown1, keyCountdown2;
         bool gameOn = false, Player2 = false, keyPressed1, keyPressed2;
         bool Sound = true, Music = true, extraLifeGiven, killed;
-        string menu, SoundPath = System.IO.Path.GetFullPath("../sounds/");
+        string SoundPath = System.IO.Path.GetFullPath("../sounds/");
+        Tuple<mn,Label> menuSelected;
+        mn menuLayer;
         List<char> symbols = new List<char>();
         WMPLib.WindowsMediaPlayer SoundPlayer = new WMPLib.WindowsMediaPlayer();
         WMPLib.WindowsMediaPlayer SoundPlayer2 = new WMPLib.WindowsMediaPlayer();
@@ -37,8 +39,11 @@ namespace PacManUltimate
         Tuple<int, int> TopGhostInTiles;
         Label ScoreBox = new Label(), HighScoreBox = new Label(), Score2Box = new Label();
         EntitiesClass.nType[] DefaultAIs;
+        List<Label> activeElements = new List<Label>();
 
-        //----------MENU BLOCK----------------------------------------------------------------
+        #endregion
+
+        #region - MENU Block -
 
         public PacManUltimate()
         {
@@ -47,45 +52,27 @@ namespace PacManUltimate
 
         private void PacManUltimate_Load(object sender, EventArgs e)
         {
-            menu = "Start";
-            Menu();
+            menuLayer = mn.start;
+            menuSelected = new Tuple<mn, Label>(mn.game, OrgGame);
+            Menu(Menu_Start);
         }
 
-        private new void Menu()
+        private new void Menu(Action Menu_Func)     // Use of built-in delegate for void functions that take no parameters 
         {
-            //Function that makes Menu work by simple enabling and disabling visibility of selected controls
-            //depending on the part of menu the player is in
+            // Function that makes Menu work by simple enabling and disabling visibility of selected controls.
+            // Depends on the part of menu the player is in.
 
             for (int i = 0; i < activeElements.Count; i++)
                 activeElements[i].Visible = false;
 
             activeElements = new List<Label>();
-            switch (menu)
-            {
-                default:                            //case "Start"
-                    Menu_Default(); break;
-
-                case "Menu":
-                    Menu_MainMenu(); break;
-
-                case "Game":                        // Don't have to do anything special, automatically sets visibility of all to false
-                    break;
-
-                case "SelectMap":
-                    Menu_SelectMap(); break;
-
-                case "HighScore":
-                    Menu_HighScore(); break;
-
-                case "Settings":
-                    Menu_Settings(); break;
-            }
+            Menu_Func();
 
             for (int i = 0; i < activeElements.Count; i++)
                 activeElements[i].Visible = true;
         }
 
-        private void Menu_Default()
+        private void Menu_Start()
         {
             activeElements.Add(PressEnter);
             activeElements.Add(Pacman);
@@ -109,6 +96,7 @@ namespace PacManUltimate
             activeElements.Add(ErrorInfo);
             activeElements.Add(AdvancedLdBut);
             activeElements.Add(TryAgainBut);
+            activeElements.Add(EscLabel);
         }
 
         private void Menu_HighScore()
@@ -118,6 +106,7 @@ namespace PacManUltimate
             activeElements.Add(ScoreNum);
             activeElements.Add(HighScoreLabel);
             activeElements.Add(HighScoreNum);
+            activeElements.Add(EscLabel);
 
             //Two branches depending on the mode player has chosen - normal x VS
             if (!Player2)
@@ -184,6 +173,7 @@ namespace PacManUltimate
         {
             activeElements.Add(MusicButton);
             activeElements.Add(SoundsButton);
+            activeElements.Add(EscLabel);
 
             //Buttons load with color depending on associated booleans
             if (Music)
@@ -202,13 +192,12 @@ namespace PacManUltimate
             //loads predefined original map and calls MakeItHappen to procced to game
             LoadMap loadMap = new LoadMap("../OriginalMap.txt");
             if (loadMap.Map != null)
-            {
                 MakeItHappen(loadMap);
-            }
         }
 
         private void AdvancedLdBut_Click(object sender, EventArgs e)
         {
+            menuLayer = mn.submenu;
             activeElements.Add(TypeSymbols);
             activeElements.Add(TypedSymbols);
             TypedSymbols.Text = "";
@@ -224,8 +213,8 @@ namespace PacManUltimate
             //In case of success calls procedure MakeItHappen
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
-                menu = "SelectMap";
-                Menu();
+                menuLayer = mn.submenu;
+                Menu(Menu_SelectMap);
                 string path = openFileDialog1.FileName;
                 LoadMap loadMap;
                 if (symbols.Count == 0)
@@ -236,9 +225,7 @@ namespace PacManUltimate
                     symbols = new List<char>();
                 }
                 if (loadMap.Map != null)
-                {
                     MakeItHappen(loadMap);
-                }
             }
         }
 
@@ -262,20 +249,21 @@ namespace PacManUltimate
 
         private void VS_Click(object sender, EventArgs e)
         {
-            Player2 = true;
             selectMap_Click(new object(), EventArgs.Empty);
+            if(gameOn)
+                Player2 = true;
         }
 
         private void Settings_Click(object sender, EventArgs e)
         {
-            menu = "Settings";
-            Menu();
+            menuLayer = mn.submenu;
+            Menu(Menu_Settings);
         }
 
         private void HighScr_Click(object sender, EventArgs e)
         {
-            menu = "HighScore";
-            Menu();
+            menuLayer = mn.submenu;
+            Menu(Menu_HighScore);
         }
 
         private string CharListToString(List<char> source)
@@ -292,42 +280,72 @@ namespace PacManUltimate
             return output;
         }
 
+        private void MoveInMenu(int delta)
+        {
+            const byte menuSize = 5;
+            Label newLabel = EnumToLabel((mn)(((int)menuSelected.Item1 + delta + menuSize) % menuSize));
+            HighlightSelected(menuSelected.Item2, newLabel);
+            menuSelected = new Tuple<mn, Label>((mn)(((int)menuSelected.Item1 + delta + menuSize) % menuSize), newLabel);
+        }
+
         private void PacManUltimate_KeyDown(object sender, KeyEventArgs e)
         {
-            //Function that handles player's input
-            //seperate branch for menu input and game input
+            // Function that handles player's input.
+            // Seperate branch for menu input and game input.
+            const byte symbolsLimit = 5;
             if (!gameOn)
             {
-                if (e.KeyValue == 13 && menu == "Start")
+                if (menuLayer == mn.start)
                 {
-                    menu = "Menu";
-                    Menu();
+                    Menu(Menu_MainMenu);
+                    HighlightSelected(menuSelected.Item2, OrgGame);
+                    menuSelected = new Tuple<mn, Label>(mn.game, OrgGame);
+                    menuLayer = mn.game;
                 }
-                else if (e.KeyValue == 27 && menu != "Start")
+                else
                 {
-                    //Escape returns you to menu form everywhere except from start screen
-                    if (menu == "Menu")
-                        menu = "Start";
-                    else
-                        menu = "Menu";
-                    Menu();
-                }
-                else if (TypedSymbols.Visible == true)
-                {
-                    //Branch accessible during typing of symbols used on Map to load
-                    if (e.KeyCode == Keys.Back && symbols.Count() > 0)
+                    if (e.KeyCode == Keys.Escape)
                     {
-                        symbols.RemoveAt(symbols.Count() - 1);                      
-                        TypedSymbols.Text = CharListToString(symbols);                       
+                        // Escape returns you to menu form everywhere except from menu itself.
+                        if (menuLayer == mn.submenu)
+                        {
+                            Menu(Menu_MainMenu);
+                            HighlightSelected(menuSelected.Item2, OrgGame);
+                            menuSelected = new Tuple<mn, Label>(mn.game, OrgGame);
+                            menuLayer = mn.game;
+                        }
+                        else
+                        {
+                            menuLayer = mn.start;
+                            Menu(Menu_Start);
+                        }
                     }
-                    if (!symbols.Contains((char)e.KeyValue) && e.KeyCode != Keys.Back)
+                    else if (e.KeyCode == Keys.W || e.KeyCode == Keys.Up)
+                        MoveInMenu(-1);
+                    else if (e.KeyCode == Keys.S || e.KeyCode == Keys.Down)
+                        MoveInMenu(+1);
+                    else if (e.KeyCode == Keys.Enter)
                     {
-                        symbols.Add((char)e.KeyValue);
-                        TypedSymbols.Text = CharListToString(symbols);
+                        (EnumToAction(menuSelected.Item1))(new object(), new EventArgs());
                     }
-                    Refresh();
-                    if (symbols.Count() == 5)
-                        selectMap_Click(new object(), EventArgs.Empty);
+
+                    else if (TypedSymbols.Visible == true)
+                    {
+                        // Branch accessible during typing of symbols used on Map to load.
+                        if (e.KeyCode == Keys.Back && symbols.Count() > 0)
+                        {
+                            symbols.RemoveAt(symbols.Count() - 1);
+                            TypedSymbols.Text = CharListToString(symbols);
+                        }
+                        if (!symbols.Contains((char)e.KeyValue) && e.KeyCode != Keys.Back)
+                        {
+                            symbols.Add((char)e.KeyValue);
+                            TypedSymbols.Text = CharListToString(symbols);
+                        }
+                        Refresh();
+                        if (symbols.Count() == symbolsLimit)
+                            selectMap_Click(new object(), EventArgs.Empty);
+                    }
                 }
             }
             else
@@ -343,21 +361,13 @@ namespace PacManUltimate
                 else
                     keyPressed1 = true;
                 //NewDirection1 and 2 to save desired direction of both players
-                if (e.KeyCode == Keys.A)
+                if (e.KeyCode == Keys.A || !Player2 && e.KeyCode == Keys.Left)
                     NewDirection1 = Direction.nType.LEFT;
-                else if (e.KeyCode == Keys.W)
+                else if (e.KeyCode == Keys.W || !Player2 && e.KeyCode == Keys.Up)
                     NewDirection1 = Direction.nType.UP;
-                else if (e.KeyCode == Keys.D)
+                else if (e.KeyCode == Keys.D || !Player2 && e.KeyCode == Keys.Right)
                     NewDirection1 = Direction.nType.RIGHT;
-                else if (e.KeyCode == Keys.S)
-                    NewDirection1 = Direction.nType.DOWN;
-                else if (!Player2 && e.KeyCode == Keys.Left)
-                    NewDirection1 = Direction.nType.LEFT;
-                else if (!Player2 && e.KeyCode == Keys.Up)
-                    NewDirection1 = Direction.nType.UP;
-                else if (!Player2 && e.KeyCode == Keys.Right)
-                    NewDirection1 = Direction.nType.RIGHT;
-                else if (!Player2 && e.KeyCode == Keys.Down)
+                else if (e.KeyCode == Keys.S || !Player2 && e.KeyCode == Keys.Down)
                     NewDirection1 = Direction.nType.DOWN;
                 else if (Player2 && e.KeyCode == Keys.Left)
                     NewDirection2 = Direction.nType.LEFT;
@@ -382,19 +392,66 @@ namespace PacManUltimate
 
         private void Hover(object sender, EventArgs e)
         {
-            //Function that provides color change of labels in menu
+            //Function that provides color change of labels in menu          
             Label label = (Label)sender;
-            label.ForeColor = Color.Yellow;
-            label.Font = new Font(label.Font.FontFamily, 23);
+            HighlightSelected(menuSelected.Item2, label);
+            menuSelected = new Tuple<mn, Label>(LabelToEnum(label), label);
         }
 
-        private void HoverLeave(object sender, EventArgs e)
+        private mn LabelToEnum(Label label)
         {
-            //Same as Hover
-            Label label = (Label)sender;
-            label.ForeColor = Color.White;
-            label.Font = new Font(label.Font.FontFamily, 21);
+            if (label == OrgGame)
+                return mn.game;
+            else if (label == selectMap)
+                return mn.selectmap;
+            else if (label == VS)
+                return mn.vs;
+            else if (label == HighScr)
+                return mn.highscore;
+            else if (label == Settings)
+                return mn.settings;
+            else return mn.start;
         }
+
+        private Label EnumToLabel(mn selected)
+        {
+            if (selected == mn.game)
+                return OrgGame;
+            else if (selected == mn.selectmap)
+                return selectMap;
+            else if (selected == mn.vs)
+                return VS;
+            else if (selected == mn.highscore)
+                return HighScr;
+            else if (selected == mn.settings)
+                return Settings;
+            else return OrgGame;
+        }
+
+        private Action<object,EventArgs> EnumToAction(mn selected)
+        {
+            if (selected == mn.game)
+                return OrgGame_Click;
+            else if (selected == mn.selectmap)
+                return selectMap_Click;
+            else if (selected == mn.vs)
+                return VS_Click;
+            else if (selected == mn.highscore)
+                return HighScr_Click;
+            else if (selected == mn.settings)
+                return Settings_Click;
+            else return OrgGame_Click;
+        }
+
+        private void HighlightSelected(Label prevLabel, Label newLabel)
+        {
+            prevLabel.ForeColor = Color.White;
+            prevLabel.Font = new Font(prevLabel.Font.FontFamily, 21);
+            newLabel.ForeColor = Color.Yellow;
+            newLabel.Font = new Font(newLabel.Font.FontFamily, 23);
+        }
+
+        #endregion
 
         //----------START LEVEL BLOCK-----------------------------------------------------------
 
@@ -645,8 +702,7 @@ namespace PacManUltimate
             //disables menu functionality by setting it to menu
             //switches input to game mode by turning gameOn
             //Initializes Map and calls function that makes the game start
-            menu = "Game";
-            Menu();
+            Menu(() => { });    // Lambda expression - calls empty action <=> Does nothing
             Level = 0;
             gameOn = true;
             Map = loadMap.Map;
@@ -673,8 +729,10 @@ namespace PacManUltimate
             this.Controls.Clear();
             components.Dispose();
             InitializeComponent(false);
-            menu = "HighScore";
-            Menu();
+            HighlightSelected(menuSelected.Item2, HighScr);     // To unhighlight previous selection and enable highscore load.
+            menuSelected = new Tuple<mn, Label>(mn.highscore, HighScr);
+            menuLayer = mn.submenu;
+            Menu(Menu_HighScore);
         }
 
         private void KillPacman()

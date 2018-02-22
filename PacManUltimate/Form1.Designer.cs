@@ -106,7 +106,7 @@
             this.PressEnter.Name = "PressEnter";
             this.PressEnter.Size = new System.Drawing.Size(256, 126);
             this.PressEnter.TabIndex = 6;
-            this.PressEnter.Text = "INSERT COIN\r\n                 \r\n   press enter\r\n";
+            this.PressEnter.Text = "INSERT COIN\r\n                 \r\npress any key\r\n";
             this.PressEnter.Visible = false;
             // 
             // openFileDialog1
@@ -126,8 +126,7 @@
             this.selectMap.TabIndex = 8;
             this.selectMap.Text = "Select Map";
             this.selectMap.Click += new System.EventHandler(this.selectMap_Click);
-            this.selectMap.MouseLeave += new System.EventHandler(this.HoverLeave);
-            this.selectMap.MouseHover += new System.EventHandler(this.Hover);
+            this.selectMap.MouseEnter += new System.EventHandler(this.Hover);
             this.selectMap.Visible = false;
             // 
             // OrgGame
@@ -138,12 +137,11 @@
             this.OrgGame.ForeColor = System.Drawing.Color.White;
             this.OrgGame.Location = new System.Drawing.Point(94, 51);
             this.OrgGame.Name = "OrgGame";
-            this.OrgGame.Size = new System.Drawing.Size(241, 39);
+            this.OrgGame.Size = new System.Drawing.Size(241, 41);
             this.OrgGame.TabIndex = 9;
             this.OrgGame.Text = "Original Game";
             this.OrgGame.Click += new System.EventHandler(this.OrgGame_Click);
-            this.OrgGame.MouseLeave += new System.EventHandler(this.HoverLeave);
-            this.OrgGame.MouseHover += new System.EventHandler(this.Hover);
+            this.OrgGame.MouseEnter += new System.EventHandler(this.Hover);
             this.OrgGame.Visible = false;
             // 
             // Settings
@@ -158,8 +156,7 @@
             this.Settings.TabIndex = 10;
             this.Settings.Text = "Settings";
             this.Settings.Click += new System.EventHandler(this.Settings_Click);
-            this.Settings.MouseLeave += new System.EventHandler(this.HoverLeave);
-            this.Settings.MouseHover += new System.EventHandler(this.Hover);
+            this.Settings.MouseEnter += new System.EventHandler(this.Hover);
             this.Settings.Visible = false;
             // 
             // Updater
@@ -174,7 +171,7 @@
             this.EscLabel.ForeColor = System.Drawing.Color.Yellow;
             this.EscLabel.Location = new System.Drawing.Point(135, 427);
             this.EscLabel.Name = "EscLabel";
-            this.EscLabel.Size = new System.Drawing.Size(185, 25);
+            this.EscLabel.Size = new System.Drawing.Size(185, 22);
             this.EscLabel.TabIndex = 11;
             this.EscLabel.Text = "Press ESC to return";
             this.EscLabel.Visible = false;
@@ -187,12 +184,11 @@
             this.HighScr.ForeColor = System.Drawing.Color.White;
             this.HighScr.Location = new System.Drawing.Point(104, 328);
             this.HighScr.Name = "HighScr";
-            this.HighScr.Size = new System.Drawing.Size(235, 39);
+            this.HighScr.Size = new System.Drawing.Size(235, 38);
             this.HighScr.TabIndex = 12;
             this.HighScr.Text = "Highest Score";
             this.HighScr.Click += new System.EventHandler(this.HighScr_Click);
-            this.HighScr.MouseLeave += new System.EventHandler(this.HoverLeave);
-            this.HighScr.MouseHover += new System.EventHandler(this.Hover);
+            this.HighScr.MouseEnter += new System.EventHandler(this.Hover);
             this.HighScr.Visible = false;
             // 
             // VS
@@ -207,8 +203,7 @@
             this.VS.TabIndex = 13;
             this.VS.Text = "VS";
             this.VS.Click += new System.EventHandler(this.VS_Click);
-            this.VS.MouseLeave += new System.EventHandler(this.HoverLeave);
-            this.VS.MouseHover += new System.EventHandler(this.Hover);
+            this.VS.MouseEnter += new System.EventHandler(this.Hover);
             this.VS.Visible = false;
             // 
             // HighScoreLabel
