@@ -9,6 +9,9 @@ namespace PacManUltimate
 {
     class HighScoreClass
     {
+        const int ImportantLine = 10;
+        const int LinesInFile = 15;
+
         //Contains two simple functions one for loading and other for saving highscore
         public int LoadHighScore()
         {
@@ -16,7 +19,7 @@ namespace PacManUltimate
             //it is just necesary to convert it from binary to decimaly number
             int highScore = 0;
             StreamReader sr = new StreamReader("../config.bin");
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < ImportantLine; i++)
             {
                 if (sr.EndOfStream)
                     return 0;
@@ -36,9 +39,9 @@ namespace PacManUltimate
             StreamWriter sw = new StreamWriter("../config.bin");
             Random rndm = new Random();
             string binaryScore = Convert.ToString(newHighScore, 2);
-            for (int i = 0; i < 15; i++)
+            for (int i = 0; i < LinesInFile; i++)
             {
-                if (i == 10)
+                if (i == ImportantLine)
                     sw.WriteLine(binaryScore);
                 else
                     sw.WriteLine(Convert.ToString(rndm.Next(newHighScore - 32, newHighScore + 32), 2));

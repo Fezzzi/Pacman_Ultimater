@@ -16,467 +16,57 @@ namespace PacManUltimate
     {
         #region - VARIABLES Block -
 
-        enum mn { game = 0, selectmap, settings, vs, highscore, start, submenu = 6 };
-
         int HighScore = -1, keyTicks = 5, Score, CollectedDots, Lives, munch, GhostsEaten, ticks;
         int Level, SoundTick, Score2, FreeGhost, GhostRelease, EatEmTimer, keyCountdown1, keyCountdown2;
-        bool gameOn = false, Player2 = false, keyPressed1, keyPressed2;
-        bool Sound = true, Music = true, extraLifeGiven, killed;
+        bool keyPressed1, keyPressed2;
+        bool extraLifeGiven, killed;
         string SoundPath = System.IO.Path.GetFullPath("../sounds/");
-        Tuple<mn,Label> menuSelected;
-        mn menuLayer;
         List<char> symbols = new List<char>();
         WMPLib.WindowsMediaPlayer SoundPlayer = new WMPLib.WindowsMediaPlayer();
         WMPLib.WindowsMediaPlayer SoundPlayer2 = new WMPLib.WindowsMediaPlayer();
         System.Media.SoundPlayer MusicPlayer = new System.Media.SoundPlayer();
         Tuple<Tile.nType?[][], int, Tuple<int, int>> Map;
         Tile.nType?[][] MapFresh;
-        Tuple<int, int, PictureBox, Direction.nType, EntitiesClass.nType>[] Entities;
+        Tuple<int, int, PictureBox, Direction.nType, DefaultAI.nType>[] Entities;
         Direction.nType NewDirection1 = Direction.nType.DIRECTION;
         Direction.nType NewDirection2 = Direction.nType.DIRECTION;
         PictureBox[][] PictureMap;
         PictureBox[] PacLives;
         Tuple<int, int> TopGhostInTiles;
-        Label ScoreBox = new Label(), HighScoreBox = new Label(), Score2Box = new Label();
-        EntitiesClass.nType[] DefaultAIs;
-        List<Label> activeElements = new List<Label>();
-
+        DefaultAI.nType[] DefaultAIs;
+        
         #endregion
 
-        #region - MENU Block -
+        #region - STARTGAME Block -
 
-        public PacManUltimate()
-        {
-            InitializeComponent(true);
-        }
-
-        private void PacManUltimate_Load(object sender, EventArgs e)
-        {
-            menuLayer = mn.start;
-            menuSelected = new Tuple<mn, Label>(mn.game, OrgGame);
-            Menu(Menu_Start);
-        }
-
-        private new void Menu(Action Menu_Func)     // Use of built-in delegate for void functions that take no parameters 
-        {
-            // Function that makes Menu work by simple enabling and disabling visibility of selected controls.
-            // Depends on the part of menu the player is in.
-
-            for (int i = 0; i < activeElements.Count; i++)
-                activeElements[i].Visible = false;
-
-            activeElements = new List<Label>();
-            Menu_Func();
-
-            for (int i = 0; i < activeElements.Count; i++)
-                activeElements[i].Visible = true;
-        }
-
-        private void Menu_Start()
-        {
-            activeElements.Add(PressEnter);
-            activeElements.Add(Pacman);
-            activeElements.Add(ultimate);
-            activeElements.Add(copyright);
-        }
-
-        private void Menu_MainMenu()
-        {
-            activeElements.Add(selectMap);
-            activeElements.Add(OrgGame);
-            activeElements.Add(Settings);
-            activeElements.Add(EscLabel);
-            activeElements.Add(HighScr);
-            activeElements.Add(VS);
-        }
-
-        private void Menu_SelectMap()
-        {
-            activeElements.Add(ErrorLdMap);
-            activeElements.Add(ErrorInfo);
-            activeElements.Add(AdvancedLdBut);
-            activeElements.Add(TryAgainBut);
-            activeElements.Add(EscLabel);
-        }
-
-        private void Menu_HighScore()
-        {
-            activeElements.Add(GameOverLabel);
-            activeElements.Add(ScoreLabel);
-            activeElements.Add(ScoreNum);
-            activeElements.Add(HighScoreLabel);
-            activeElements.Add(HighScoreNum);
-            activeElements.Add(EscLabel);
-
-            //Two branches depending on the mode player has chosen - normal x VS
-            if (!Player2)
-            {
-                if (Score != 0)
-                {
-                    GameOverLabel.Text = "GAME OVER";
-                    GameOverLabel.ForeColor = Color.Red;
-                    GameOverLabel.Location = new Point(52, 33);
-                    ScoreLabel.Text = "Your Score";
-                    ScoreNum.Text = Score.ToString();
-                }
-                else
-                {
-                    ScoreLabel.Text = "";
-                    ScoreNum.Text = "";
-                    GameOverLabel.Text = "";
-                }
-                if (HighScore == -1)
-                {
-                    //In case the HighScore is not loaded yet (value is -1) do so
-                    HighScoreClass hscr = new HighScoreClass();
-                    HighScore = hscr.LoadHighScore();
-                }
-                HighScoreLabel.Text = "Highest Score";
-                HighScoreLabel.ForeColor = Color.Yellow;
-                HighScoreNum.ForeColor = Color.Yellow;
-                HighScoreNum.Text = HighScore.ToString();
-            }
-            else
-            {
-                //Game selects the winner as the pleyer with highest score
-                //In case of tie chooses the winner by remaing pacman lives
-                if (Score < Score2 || (Score == Score2 && Lives <= 0))
-                {
-                    GameOverLabel.Text = "GHOSTS WIN";
-                    GameOverLabel.ForeColor = Color.Red;
-                    GameOverLabel.Location = new Point(36, 33);
-                    HighScoreLabel.Text = "2UP";
-                    HighScoreLabel.ForeColor = Color.Red;
-                    HighScoreNum.Text = Score2.ToString();
-                    HighScoreNum.ForeColor = Color.Red;
-                    ScoreLabel.Text = "1UP";
-                    ScoreNum.Text = Score.ToString();
-                }
-                else
-                {
-                    GameOverLabel.Text = "PACMAN WINS";
-                    GameOverLabel.ForeColor = Color.Yellow;
-                    GameOverLabel.Location = new Point(34, 33);
-                    HighScoreLabel.Text = "1UP";
-                    HighScoreNum.Text = Score.ToString();
-                    ScoreLabel.Text = "2UP";
-                    ScoreNum.Text = Score2.ToString();
-                }
-            }
-            //It is necessary to set scre and player boolean in order to be able to access default Highscore
-            //page later on from menu
-            Score = 0;
-            Player2 = false;
-        }
-
-        private void Menu_Settings()
-        {
-            activeElements.Add(MusicButton);
-            activeElements.Add(SoundsButton);
-            activeElements.Add(EscLabel);
-
-            //Buttons load with color depending on associated booleans
-            if (Music)
-                MusicButton.BackColor = Color.Yellow;
-            else
-                MusicButton.BackColor = Color.Gray;
-
-            if (Sound)
-                SoundsButton.BackColor = Color.Yellow;
-            else
-                SoundsButton.BackColor = Color.Gray;
-        }
-
-        private void OrgGame_Click(object sender, EventArgs e)
-        {
-            //loads predefined original map and calls MakeItHappen to procced to game
-            LoadMap loadMap = new LoadMap("../OriginalMap.txt");
-            if (loadMap.Map != null)
-                MakeItHappen(loadMap);
-        }
-
-        private void AdvancedLdBut_Click(object sender, EventArgs e)
-        {
-            menuLayer = mn.submenu;
-            activeElements.Add(TypeSymbols);
-            activeElements.Add(TypedSymbols);
-            TypedSymbols.Text = "";
-            activeElements.Add(TypeHint);
-            for (int i = 0; i < activeElements.Count; i++)
-                activeElements[i].Visible = true;
-        }
-
-        private void selectMap_Click(object sender, EventArgs e)
-        {
-            //Opens file dialog after clinking on Select Map in menu
-            //Afterwards tries to open a load a map from the file
-            //In case of success calls procedure MakeItHappen
-            if (openFileDialog1.ShowDialog() == DialogResult.OK)
-            {
-                menuLayer = mn.submenu;
-                Menu(Menu_SelectMap);
-                string path = openFileDialog1.FileName;
-                LoadMap loadMap;
-                if (symbols.Count == 0)
-                    loadMap = new LoadMap(path);
-                else
-                {
-                    loadMap = new LoadMap(path, symbols.ToArray());
-                    symbols = new List<char>();
-                }
-                if (loadMap.Map != null)
-                    MakeItHappen(loadMap);
-            }
-        }
-
-        private void MusicButton_Click(object sender, EventArgs e)
-        {
-            Music = !Music;
-            if (Music)
-                MusicButton.BackColor = Color.Yellow;
-            else
-                MusicButton.BackColor = Color.Gray;
-        }
-
-        private void SoundsButton_Click(object sender, EventArgs e)
-        {
-            Sound = !Sound;
-            if (Sound)
-                SoundsButton.BackColor = Color.Yellow;
-            else
-                SoundsButton.BackColor = Color.Gray;
-        }
-
-        private void VS_Click(object sender, EventArgs e)
-        {
-            selectMap_Click(new object(), EventArgs.Empty);
-            if(gameOn)
-                Player2 = true;
-        }
-
-        private void Settings_Click(object sender, EventArgs e)
-        {
-            menuLayer = mn.submenu;
-            Menu(Menu_Settings);
-        }
-
-        private void HighScr_Click(object sender, EventArgs e)
-        {
-            menuLayer = mn.submenu;
-            Menu(Menu_HighScore);
-        }
-
-        private string CharListToString(List<char> source)
-        {
-            //Function to fill string  with typed characters separated by ';'
-            string output = "";
-            if(source.Count() > 0)
-                output = source[0].ToString();
-            char[] array = source.ToArray();
-            for(int i = 1; i < source.Count(); i++)
-            {
-                output += " ; " + source[i];
-            }
-            return output;
-        }
-
-        private void MoveInMenu(int delta)
-        {
-            const byte menuSize = 5;
-            Label newLabel = EnumToLabel((mn)(((int)menuSelected.Item1 + delta + menuSize) % menuSize));
-            HighlightSelected(menuSelected.Item2, newLabel);
-            menuSelected = new Tuple<mn, Label>((mn)(((int)menuSelected.Item1 + delta + menuSize) % menuSize), newLabel);
-        }
-
-        private void PacManUltimate_KeyDown(object sender, KeyEventArgs e)
-        {
-            // Function that handles player's input.
-            // Seperate branch for menu input and game input.
-            const byte symbolsLimit = 5;
-            if (!gameOn)
-            {
-                if (menuLayer == mn.start)
-                {
-                    Menu(Menu_MainMenu);
-                    HighlightSelected(menuSelected.Item2, OrgGame);
-                    menuSelected = new Tuple<mn, Label>(mn.game, OrgGame);
-                    menuLayer = mn.game;
-                }
-                else
-                {
-                    if (e.KeyCode == Keys.Escape)
-                    {
-                        // Escape returns you to menu form everywhere except from menu itself.
-                        if (menuLayer == mn.submenu)
-                        {
-                            Menu(Menu_MainMenu);
-                            HighlightSelected(menuSelected.Item2, OrgGame);
-                            menuSelected = new Tuple<mn, Label>(mn.game, OrgGame);
-                            menuLayer = mn.game;
-                        }
-                        else
-                        {
-                            menuLayer = mn.start;
-                            Menu(Menu_Start);
-                        }
-                    }
-                    else if (e.KeyCode == Keys.W || e.KeyCode == Keys.Up)
-                        MoveInMenu(-1);
-                    else if (e.KeyCode == Keys.S || e.KeyCode == Keys.Down)
-                        MoveInMenu(+1);
-                    else if (e.KeyCode == Keys.Enter)
-                    {
-                        (EnumToAction(menuSelected.Item1))(new object(), new EventArgs());
-                    }
-
-                    else if (TypedSymbols.Visible == true)
-                    {
-                        // Branch accessible during typing of symbols used on Map to load.
-                        if (e.KeyCode == Keys.Back && symbols.Count() > 0)
-                        {
-                            symbols.RemoveAt(symbols.Count() - 1);
-                            TypedSymbols.Text = CharListToString(symbols);
-                        }
-                        if (!symbols.Contains((char)e.KeyValue) && e.KeyCode != Keys.Back)
-                        {
-                            symbols.Add((char)e.KeyValue);
-                            TypedSymbols.Text = CharListToString(symbols);
-                        }
-                        Refresh();
-                        if (symbols.Count() == symbolsLimit)
-                            selectMap_Click(new object(), EventArgs.Empty);
-                    }
-                }
-            }
-            else
-            {
-                //Two booleans keyPressed1 and 2 to notice which of the players during VS play has pushed the key
-                if (Player2)
-                {
-                    if (e.KeyCode == Keys.A || e.KeyCode == Keys.W || e.KeyCode == Keys.D || e.KeyCode == Keys.S)
-                        keyPressed1 = true;
-                    else
-                        keyPressed2 = true;
-                }
-                else
-                    keyPressed1 = true;
-                //NewDirection1 and 2 to save desired direction of both players
-                if (e.KeyCode == Keys.A || !Player2 && e.KeyCode == Keys.Left)
-                    NewDirection1 = Direction.nType.LEFT;
-                else if (e.KeyCode == Keys.W || !Player2 && e.KeyCode == Keys.Up)
-                    NewDirection1 = Direction.nType.UP;
-                else if (e.KeyCode == Keys.D || !Player2 && e.KeyCode == Keys.Right)
-                    NewDirection1 = Direction.nType.RIGHT;
-                else if (e.KeyCode == Keys.S || !Player2 && e.KeyCode == Keys.Down)
-                    NewDirection1 = Direction.nType.DOWN;
-                else if (Player2 && e.KeyCode == Keys.Left)
-                    NewDirection2 = Direction.nType.LEFT;
-                else if (Player2 && e.KeyCode == Keys.Up)
-                    NewDirection2 = Direction.nType.UP;
-                else if (Player2 && e.KeyCode == Keys.Right)
-                    NewDirection2 = Direction.nType.RIGHT;
-                else if (Player2 && e.KeyCode == Keys.Down)
-                    NewDirection2 = Direction.nType.DOWN;
-                else if (e.KeyCode == Keys.Escape)
-                    EndGame();
-                //In case the statment has reached this part the pushed key is invalid so disable the booleans
-                else if (Player2)
-                {
-                    keyPressed1 = false;
-                    keyPressed2 = false;
-                }
-                else
-                    keyPressed1 = false;
-            }
-        }
-
-        private void Hover(object sender, EventArgs e)
-        {
-            //Function that provides color change of labels in menu          
-            Label label = (Label)sender;
-            HighlightSelected(menuSelected.Item2, label);
-            menuSelected = new Tuple<mn, Label>(LabelToEnum(label), label);
-        }
-
-        private mn LabelToEnum(Label label)
-        {
-            if (label == OrgGame)
-                return mn.game;
-            else if (label == selectMap)
-                return mn.selectmap;
-            else if (label == VS)
-                return mn.vs;
-            else if (label == HighScr)
-                return mn.highscore;
-            else if (label == Settings)
-                return mn.settings;
-            else return mn.start;
-        }
-
-        private Label EnumToLabel(mn selected)
-        {
-            if (selected == mn.game)
-                return OrgGame;
-            else if (selected == mn.selectmap)
-                return selectMap;
-            else if (selected == mn.vs)
-                return VS;
-            else if (selected == mn.highscore)
-                return HighScr;
-            else if (selected == mn.settings)
-                return Settings;
-            else return OrgGame;
-        }
-
-        private Action<object,EventArgs> EnumToAction(mn selected)
-        {
-            if (selected == mn.game)
-                return OrgGame_Click;
-            else if (selected == mn.selectmap)
-                return selectMap_Click;
-            else if (selected == mn.vs)
-                return VS_Click;
-            else if (selected == mn.highscore)
-                return HighScr_Click;
-            else if (selected == mn.settings)
-                return Settings_Click;
-            else return OrgGame_Click;
-        }
-
-        private void HighlightSelected(Label prevLabel, Label newLabel)
-        {
-            prevLabel.ForeColor = Color.White;
-            prevLabel.Font = new Font(prevLabel.Font.FontFamily, 21);
-            newLabel.ForeColor = Color.Yellow;
-            newLabel.Font = new Font(newLabel.Font.FontFamily, 23);
-        }
-
-        #endregion
-
-        //----------START LEVEL BLOCK-----------------------------------------------------------
+        const int FieldSizeInRows = 31;
+        const int FieldSizeInColumns = 28;
+        const int TileSizeInPxs = 16;
+        const int EntitiesSizeInPxs = 28;
 
         private PictureBox[][] RenderMap(Tile.nType?[][] tiles)
         {
             //Function that handles loading, setting and placing of all the map tiles in game control
-            PictureBox[][] pictureMap = new PictureBox[31][];
-            for (int i = 0; i < 31; i++)
+            PictureBox[][] pictureMap = new PictureBox[FieldSizeInRows][];
+            for (int i = 0; i < FieldSizeInRows; i++)
             {
-                pictureMap[i] = new PictureBox[28];
-                for (int j = 0; j < 28; j++)
+                pictureMap[i] = new PictureBox[FieldSizeInColumns];
+                for (int j = 0; j < FieldSizeInColumns; j++)
                 {
                     PictureBox pic = new PictureBox();
                     placePictureBox
                         (
                             pic,
                             Image.FromFile("../textures/" + tiles[i][j].ToString() + ".png"),
-                            new Point((j * 16), ((i + 3) * 16)),
-                            new Size(16, 16)
+                            new Point((j * TileSizeInPxs), ((i + 3) * TileSizeInPxs)),
+                            new Size(TileSizeInPxs, TileSizeInPxs)
                         );
                     pictureMap[i][j] = pic;
                 }
             }
-            placePictureBox
-                (new PictureBox(), Image.FromFile("../textures/FREE.png"), new Point(28 * 16, 0), new Size(16, 16));
+            placePictureBox(new PictureBox(), Image.FromFile("../textures/FREE.png"), 
+                            new Point(FieldSizeInColumns * TileSizeInPxs, 0), 
+                            new Size(TileSizeInPxs, TileSizeInPxs));
             return pictureMap;
         }
 
@@ -523,46 +113,47 @@ namespace PacManUltimate
             //  - Picturebox containing entity's image and its physical location
             //  - Direction used later for entity's movement and selecting the right image
             //  - Type of entity such as Player1, Player2, or all the kinds of enemy AI
-            DefaultAIs = new EntitiesClass.nType[4]
+            DefaultAIs = new DefaultAI.nType[4]
             {
-                EntitiesClass.nType.HOSTILERNDM, EntitiesClass.nType.HOSTILERNDM,
-                EntitiesClass.nType.HOSTILERNDM, EntitiesClass.nType.HOSTILERNDM
+                DefaultAI.nType.HOSTILERNDM, DefaultAI.nType.HOSTILERNDM,
+                DefaultAI.nType.HOSTILERNDM, DefaultAI.nType.HOSTILERNDM
             };
 
-            Entities = new Tuple<int, int, PictureBox, Direction.nType, EntitiesClass.nType>[5]
+            Entities = new Tuple<int, int, PictureBox, Direction.nType, DefaultAI.nType>[5]
                 {
-                    new Tuple<int, int, PictureBox, Direction.nType, EntitiesClass.nType>
-                        (13, 23, new PictureBox(),Direction.nType.LEFT,EntitiesClass.nType.PLAYER1),
-                    new Tuple<int, int, PictureBox, Direction.nType, EntitiesClass.nType>
+                    new Tuple<int, int, PictureBox, Direction.nType, DefaultAI.nType>
+                        (13, 23, new PictureBox(),Direction.nType.LEFT,DefaultAI.nType.PLAYER1),
+                    new Tuple<int, int, PictureBox, Direction.nType, DefaultAI.nType>
                         (TopGhostInTiles.Item1, TopGhostInTiles.Item2, new PictureBox(),
-                        Direction.nType.LEFT, Player2 ? EntitiesClass.nType.PLAYER2 : DefaultAIs[0]),
-                    new Tuple<int, int, PictureBox, Direction.nType, EntitiesClass.nType>
+                        Direction.nType.LEFT, Player2 ? DefaultAI.nType.PLAYER2 : DefaultAIs[0]),
+                    new Tuple<int, int, PictureBox, Direction.nType, DefaultAI.nType>
                         (TopGhostInTiles.Item1 - 2, TopGhostInTiles.Item2 + 3,
                         new PictureBox(),Direction.nType.DIRECTION, DefaultAIs[1]),
-                    new Tuple<int, int, PictureBox, Direction.nType, EntitiesClass.nType>
+                    new Tuple<int, int, PictureBox, Direction.nType, DefaultAI.nType>
                         (TopGhostInTiles.Item1, TopGhostInTiles.Item2 + 3,
                         new PictureBox(),Direction.nType.DIRECTION, DefaultAIs[2]),
-                    new Tuple<int, int, PictureBox, Direction.nType, EntitiesClass.nType>
+                    new Tuple<int, int, PictureBox, Direction.nType, DefaultAI.nType>
                         (TopGhostInTiles.Item1 + 2, TopGhostInTiles.Item2 + 3,
                         new PictureBox(),Direction.nType.DIRECTION, DefaultAIs[3]),
                 };
 
             //Setting entities names for easy later manipulation and automatic image selection
-            for (int i = 1; i < 6; i++)
+            const int EntityCount = 6;
+            for (int i = 1; i < EntityCount; i++)
                 Entities[i - 1].Item3.Name = "Entity" + i.ToString();
 
             //Physical placing of the entities's images on the map and preseting  their starting images
             placePictureBox(Entities[0].Item3,
                 Image.FromFile("../Textures/PacStart.png"),
-                new Point(Entities[0].Item1 * 16 + 4, Entities[0].Item2 * 16 + 42), new Size(28, 28));
+                new Point(Entities[0].Item1 * TileSizeInPxs + 4, Entities[0].Item2 * TileSizeInPxs + 42), new Size(EntitiesSizeInPxs, EntitiesSizeInPxs));
             placePictureBox(Entities[1].Item3,
                 Image.FromFile("../Textures/Entity2Left.png"),
-                new Point(Entities[1].Item1 * 16 - 13, Entities[1].Item2 * 16 + 42), new Size(28, 28));
+                new Point(Entities[1].Item1 * TileSizeInPxs - 13, Entities[1].Item2 * TileSizeInPxs + 42), new Size(EntitiesSizeInPxs, EntitiesSizeInPxs));
 
             for (int i = 2; i < 5; i++)
                 placePictureBox(Entities[i].Item3,
                     Image.FromFile("../Textures/Entity" + (i + 1).ToString() + (i % 2 == 0 ? "Up.png" : "Down.png")),
-                    new Point(Entities[i].Item1 * 16 - 13, Entities[i].Item2 * 16 + 42), new Size(28, 28));
+                    new Point(Entities[i].Item1 * TileSizeInPxs - 13, Entities[i].Item2 * TileSizeInPxs + 42), new Size(EntitiesSizeInPxs, EntitiesSizeInPxs));
         }
 
         private void LoadHud(int hp)
@@ -570,23 +161,23 @@ namespace PacManUltimate
             //Function that loads score labels and pacma lives
             int lives = 0;
             placeLabel(new Label(), "1UP", Color.White,
-                new Point(3 * 16, 0), new Font("Arial", 13, FontStyle.Bold));
+                new Point(3 * TileSizeInPxs, 0), new Font("Arial", 13, FontStyle.Bold));
             placeLabel(ScoreBox, Score > 0 ? Score.ToString() : "00", Color.White,
-                new Point(4 * 16, 20), new Font("Arial", 13, FontStyle.Bold));
+                new Point(4 * TileSizeInPxs, 20), new Font("Arial", 13, FontStyle.Bold));
             //Selects labels depeding on game mode
             if (!Player2)
             {
                 placeLabel(HighScoreBox, HighScore > 0 ? HighScore.ToString() : "00", Color.White,
-                    new Point(14 * 16, 20), new Font("Arial", 13, FontStyle.Bold));
+                    new Point(14 * TileSizeInPxs, 20), new Font("Arial", 13, FontStyle.Bold));
                 placeLabel(new Label(), "HIGH SCORE", Color.White,
-                    new Point(10 * 16, 0), new Font("Arial", 13, FontStyle.Bold));
+                    new Point(10 * TileSizeInPxs, 0), new Font("Arial", 13, FontStyle.Bold));
             }
             else
             {
                 placeLabel(new Label(), "2UP", Color.White,
-                    new Point(22 * 16, 0), new Font("Arial", 13, FontStyle.Bold));
+                    new Point(22 * TileSizeInPxs, 0), new Font("Arial", 13, FontStyle.Bold));
                 placeLabel(Score2Box, Score2 > 0 ? Score2.ToString() : "00", Color.White,
-                    new Point(23 * 16, 20), new Font("Arial", 13, FontStyle.Bold));
+                    new Point(23 * TileSizeInPxs, 20), new Font("Arial", 13, FontStyle.Bold));
             }
             //Places all three lives on their supposed place
             foreach (var item in PacLives)
@@ -709,7 +300,50 @@ namespace PacManUltimate
             PlayGame(false);
         }
 
-        //----------PLAY LEVEL BLOCK------------------------------------------------------------
+        #endregion
+
+        #region - GAMEPLAY Block -
+
+        private void GameKeyDownHandler(KeyEventArgs e)
+        {
+            //Two booleans keyPressed1 and 2 to notice which of the players during VS play has pushed the key
+            if (Player2)
+            {
+                if (e.KeyCode == Keys.A || e.KeyCode == Keys.W || e.KeyCode == Keys.D || e.KeyCode == Keys.S)
+                    keyPressed1 = true;
+                else
+                    keyPressed2 = true;
+            }
+            else
+                keyPressed1 = true;
+            //NewDirection1 and 2 to save desired direction of both players
+            if (e.KeyCode == Keys.A || !Player2 && e.KeyCode == Keys.Left)
+                NewDirection1 = Direction.nType.LEFT;
+            else if (e.KeyCode == Keys.W || !Player2 && e.KeyCode == Keys.Up)
+                NewDirection1 = Direction.nType.UP;
+            else if (e.KeyCode == Keys.D || !Player2 && e.KeyCode == Keys.Right)
+                NewDirection1 = Direction.nType.RIGHT;
+            else if (e.KeyCode == Keys.S || !Player2 && e.KeyCode == Keys.Down)
+                NewDirection1 = Direction.nType.DOWN;
+            else if (Player2 && e.KeyCode == Keys.Left)
+                NewDirection2 = Direction.nType.LEFT;
+            else if (Player2 && e.KeyCode == Keys.Up)
+                NewDirection2 = Direction.nType.UP;
+            else if (Player2 && e.KeyCode == Keys.Right)
+                NewDirection2 = Direction.nType.RIGHT;
+            else if (Player2 && e.KeyCode == Keys.Down)
+                NewDirection2 = Direction.nType.DOWN;
+            else if (e.KeyCode == Keys.Escape)
+                EndGame();
+            //In case the statment has reached this part the pushed key is invalid so disable the booleans
+            else if (Player2)
+            {
+                keyPressed1 = false;
+                keyPressed2 = false;
+            }
+            else
+                keyPressed1 = false;
+        }
 
         private void EndGame()
         {
@@ -767,7 +401,7 @@ namespace PacManUltimate
             box.Text = score.ToString();
         }
 
-        private bool IsDirectionFree(int y, int x, Tuple<int, int, PictureBox, Direction.nType, EntitiesClass.nType> entity)
+        private bool IsDirectionFree(int y, int x, Tuple<int, int, PictureBox, Direction.nType, DefaultAI.nType> entity)
         {
             //Checks whether the direction the entity is aiming in is free
             //function catches outofrange exception in order to provide possibility for
@@ -788,7 +422,7 @@ namespace PacManUltimate
         }
 
         private void SetToMove
-            (ref Direction.nType newDirection, ref Tuple<int, int, PictureBox, Direction.nType, EntitiesClass.nType> entity)
+            (ref Direction.nType newDirection, ref Tuple<int, int, PictureBox, Direction.nType, DefaultAI.nType> entity)
         {
             //Asks whether the direction entity wants to move is free and if so,
             //sests its direction and nulls variable for saving direction
@@ -796,36 +430,36 @@ namespace PacManUltimate
             Tuple<int, int> delta = dir.DirectionToTuple(newDirection);
             if (IsDirectionFree(delta.Item1, delta.Item2, entity))
             {
-                entity = new Tuple<int, int, PictureBox, Direction.nType, EntitiesClass.nType>
+                entity = new Tuple<int, int, PictureBox, Direction.nType, DefaultAI.nType>
                             (entity.Item1, entity.Item2, entity.Item3, newDirection, entity.Item5);
                 newDirection = Direction.nType.DIRECTION;
             }
         }
 
-        private void CanMove(ref Tuple<int, int, PictureBox, Direction.nType, EntitiesClass.nType> entity)
+        private void CanMove(ref Tuple<int, int, PictureBox, Direction.nType, DefaultAI.nType> entity)
         {
             //Checks whether the entity can continue in the direction it goes otherwise stops it
             Direction dir = new Direction();
             Tuple<int, int> delta = dir.DirectionToTuple(entity.Item4);
             if (!IsDirectionFree(delta.Item1, delta.Item2, entity))
-                entity = new Tuple<int, int, PictureBox, Direction.nType, EntitiesClass.nType>
+                entity = new Tuple<int, int, PictureBox, Direction.nType, DefaultAI.nType>
                     (entity.Item1, entity.Item2, entity.Item3, Direction.nType.DIRECTION, entity.Item5);
         }
 
         private void MovePicture
             (bool change, int dx, int dy, ref Tuple<int, int, PictureBox,
-                Direction.nType, EntitiesClass.nType> entity)
+                Direction.nType, DefaultAI.nType> entity)
         {
             //Phisically moves the entity and loads right image depending on the game situation and direction
             entity.Item3.Location = new Point((entity.Item3.Location.X + dx), (entity.Item3.Location.Y + dy));
             if (change)
             {
                 //normal situation
-                if (EatEmTimer <= 0 || entity.Item5 == EntitiesClass.nType.PLAYER1 ||
-                    (entity.Item5 != EntitiesClass.nType.EATEN && (munch % 3 == 0) && EatEmTimer < 30))
+                if (EatEmTimer <= 0 || entity.Item5 == DefaultAI.nType.PLAYER1 ||
+                    (entity.Item5 != DefaultAI.nType.EATEN && (munch % 3 == 0) && EatEmTimer < 30))
                     entity.Item3.Image = Image.FromFile("../Textures/" + entity.Item3.Name + entity.Item4.ToString() + ".png");
                 //entity has been eaten
-                else if (entity.Item5 == EntitiesClass.nType.EATEN)
+                else if (entity.Item5 == DefaultAI.nType.EATEN)
                     entity.Item3.Image = Image.FromFile("../Textures/Eyes" + entity.Item4.ToString() + ".png");
                 //pacman is in the excited mode - ghost are vulnareble
                 else
@@ -835,16 +469,16 @@ namespace PacManUltimate
 
         private void MoveEntity
             (bool change, int entX, int entY, int invX, int invY,
-            ref Tuple<int, int, PictureBox, Direction.nType, EntitiesClass.nType> entity)
+            ref Tuple<int, int, PictureBox, Direction.nType, DefaultAI.nType> entity)
         {
             //Moves entity's location in tiles 
-            entity = new Tuple<int, int, PictureBox, Direction.nType, EntitiesClass.nType>
+            entity = new Tuple<int, int, PictureBox, Direction.nType, DefaultAI.nType>
                             (entX, entY, entity.Item3, entity.Item4, entity.Item5);
             //Moves entity's physicall location and loads right image
             MovePicture(change, invX, invY, ref entity);
         }
 
-        private void MoveIt(ref Tuple<int, int, PictureBox, Direction.nType, EntitiesClass.nType> entity)
+        private void MoveIt(ref Tuple<int, int, PictureBox, Direction.nType, DefaultAI.nType> entity)
         {
             //moves entity in its saved direction
             //tells called function true or false in order to stop it from overwriting entity's image
@@ -880,7 +514,7 @@ namespace PacManUltimate
                 default:
                     break;
             }
-            if (entity.Item5 == EntitiesClass.nType.PLAYER1)
+            if (entity.Item5 == DefaultAI.nType.PLAYER1)
             {
                 //Provides switching between pacman's direction image and closed mouth image
                 munch++;
@@ -929,7 +563,7 @@ namespace PacManUltimate
             if (NewDirection2 != Direction.nType.DIRECTION)
                 SetToMove(ref NewDirection2, ref Entities[1]);
 
-            EntitiesClass entClass = new EntitiesClass();
+            DefaultAI entClass = new DefaultAI();
             for (int i = 0; i <= FreeGhost; i++)
             {
                 if ((i == 0 || (EatEmTimer <= 0 || (EatEmTimer > 0 && munch % 2 == 1))) && !(i == 0 && ticks == 0))
@@ -940,7 +574,7 @@ namespace PacManUltimate
                     {
                         //if entity is UI, creates new instance with direction selected by entitiesclass UI algorithm
                         if (Entities[i].Item4 == Direction.nType.DIRECTION || IsAtCrossroad(Entities[i].Item1, Entities[i].Item2))
-                            Entities[i] = new Tuple<int, int, PictureBox, Direction.nType, EntitiesClass.nType>
+                            Entities[i] = new Tuple<int, int, PictureBox, Direction.nType, DefaultAI.nType>
                                 (
                                 Entities[i].Item1,
                                 Entities[i].Item2,
@@ -949,7 +583,7 @@ namespace PacManUltimate
                                     (
                                     Entities[i].Item5,
                                     new Tuple<int, int>(Entities[i].Item1, Entities[i].Item2),
-                                    Entities[i].Item5 == EntitiesClass.nType.EATEN ?
+                                    Entities[i].Item5 == DefaultAI.nType.EATEN ?
                                         TopGhostInTiles : new Tuple<int, int>(Entities[0].Item1, Entities[0].Item2),
                                     Entities[i].Item4, Map.Item1
                                     ),
@@ -972,7 +606,7 @@ namespace PacManUltimate
                     }
                     //In case of pacman's excitemnet and if the ghost is not already  eaten
                     //changes the ghost's state to eaten and increases player's score
-                    else if (Entities[i].Item5 != EntitiesClass.nType.EATEN)
+                    else if (Entities[i].Item5 != DefaultAI.nType.EATEN)
                     {
                         if (Sound)
                         {
@@ -988,8 +622,8 @@ namespace PacManUltimate
                         GhostsEaten++;
                         Score += 200 * GhostsEaten;
                         UpdateHud(Score, ScoreBox);
-                        Entities[i] = new Tuple<int, int, PictureBox, Direction.nType, EntitiesClass.nType>
-                            (Entities[i].Item1, Entities[i].Item2, Entities[i].Item3, Entities[i].Item4, EntitiesClass.nType.EATEN);
+                        Entities[i] = new Tuple<int, int, PictureBox, Direction.nType, DefaultAI.nType>
+                            (Entities[i].Item1, Entities[i].Item2, Entities[i].Item3, Entities[i].Item4, DefaultAI.nType.EATEN);
                     }
                 }
             }
@@ -1011,9 +645,9 @@ namespace PacManUltimate
                 {
                     for (int i = 1; i < 5; i++)
                     {
-                        Entities[i] = new Tuple<int, int, PictureBox, Direction.nType, EntitiesClass.nType>
+                        Entities[i] = new Tuple<int, int, PictureBox, Direction.nType, DefaultAI.nType>
                                 (Entities[i].Item1, Entities[i].Item2, Entities[i].Item3, Entities[i].Item4,
-                                (Player2 && i == 1 ? EntitiesClass.nType.PLAYER2 : DefaultAIs[i - 1]));
+                                (Player2 && i == 1 ? DefaultAI.nType.PLAYER2 : DefaultAIs[i - 1]));
                     }
                     GhostsEaten = 0;
                 }
@@ -1062,9 +696,9 @@ namespace PacManUltimate
                     //Return all of the ghost to normal state to be able to be eaten again later
                     for (int i = 1; i < 5; i++)
                     {
-                        Entities[i] = new Tuple<int, int, PictureBox, Direction.nType, EntitiesClass.nType>
+                        Entities[i] = new Tuple<int, int, PictureBox, Direction.nType, DefaultAI.nType>
                                 (Entities[i].Item1, Entities[i].Item2, Entities[i].Item3, Entities[i].Item4,
-                                (Player2 && i == 1 ? EntitiesClass.nType.PLAYER2 : EntitiesClass.nType.HOSTILERNDM));
+                                (Player2 && i == 1 ? DefaultAI.nType.PLAYER2 : DefaultAI.nType.HOSTILERNDM));
                     }
                 }
 
@@ -1094,7 +728,7 @@ namespace PacManUltimate
             //Places ghost specified by number out of ghost house and sets his start direction 
             //in order to make him move around.
             //Also resets timer for ghost releasing
-            Entities[ghostNum] = new Tuple<int, int, PictureBox, Direction.nType, EntitiesClass.nType>
+            Entities[ghostNum] = new Tuple<int, int, PictureBox, Direction.nType, DefaultAI.nType>
                 (TopGhostInTiles.Item1, TopGhostInTiles.Item2, Entities[ghostNum].Item3,
                 Direction.nType.LEFT, Entities[ghostNum].Item5);
             Entities[ghostNum].Item3.Location = new Point(Entities[ghostNum].Item1 * 16 - 7, Entities[ghostNum].Item2 * 16 + 42);
@@ -1194,5 +828,7 @@ namespace PacManUltimate
             //Creates ilusion of game loop
             GameLoop();
         }
+    
+        #endregion
     }
 }

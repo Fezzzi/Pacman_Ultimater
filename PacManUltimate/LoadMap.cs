@@ -9,12 +9,19 @@ namespace PacManUltimate
 {
     class LoadMap
     {
+        const int TileTypes = 5;
+        const int GhostHouseSize = 38;
+        const int MapWidthInTiles = 28;
+        const int MapHeightInTiles = 31;
+        const int PacManInitialY = 24;
+        const int PacManInitialX = 14;
+
         //Handles manipulation with text files containing map
         public Tuple<Tile.nType?[][], int, Tuple<int,int>> Map;
 
         public LoadMap(string path)
         {
-            Map = LdMap(path,new char[5] {' ','.','o','x','X'});
+            Map = LdMap(path,new char[TileTypes] {' ','.','o','x','X'});
         }
 
         public LoadMap(string path, char[] symbols)
@@ -44,20 +51,20 @@ namespace PacManUltimate
             //map is created bigger so it is possible to automaticaly call transform to tiles with indexes
             //out of range of map without causing IndexOutOfRange Exception
             int numOfDots = 0;
-            char[][] map = new char[33][];
-            Tile.nType?[][] tileMap = new Tile.nType?[31][];
+            char[][] map = new char[MapHeightInTiles + 2][];
+            Tile.nType?[][] tileMap = new Tile.nType?[MapHeightInTiles][];
             int lineNum = 1,column = 0;
             StreamReader sr = new StreamReader(path);
-            map[0] = new char[30];
-            map[1] = new char[30];
-            tileMap[0] = new Tile.nType?[28];
+            map[0] = new char[MapWidthInTiles + 2];
+            map[1] = new char[MapWidthInTiles + 2];
+            tileMap[0] = new Tile.nType?[MapWidthInTiles];
 
             //reads whole text file from symbol to symbol and saves it in Map array
             while (!sr.EndOfStream)
             {
                 column++;
                 //Tests whether text file does not contain more that 31 lines
-                if (lineNum > 31)
+                if (lineNum > MapHeightInTiles)
                     return null;
                 char symbol = (char)sr.Read();
                 while (symbol == 13 || symbol == 10)
@@ -91,13 +98,13 @@ namespace PacManUltimate
                     //Returns null in case the file has already reached 31 lines
                     column = 0;
                     lineNum++;
-                    map[lineNum] = new char[30];
-                    if (lineNum < 32)
-                        tileMap[lineNum - 1] = new Tile.nType?[28];
+                    map[lineNum] = new char[MapWidthInTiles + 2];
+                    if (lineNum < MapHeightInTiles + 1)
+                        tileMap[lineNum - 1] = new Tile.nType?[MapWidthInTiles];
                     else return null;
                 }           
             }
-            if(lineNum == 31 && column == 28)
+            if(lineNum == MapHeightInTiles && column == MapWidthInTiles)
             {
                 //Separetly Transform to tile last line because reading loop has ended on 31st line
                 lineNum++;
@@ -123,31 +130,31 @@ namespace PacManUltimate
             //and all pellets are accessible for both pacman and ghosts
             int ghostHouse = 0, dotsFound = 0;
             Tuple<int, int> ghostPosition = null;
-            Tuple<int, int> position = new Tuple<int, int>(24,14);
-            bool[][] connectedTiles = new bool[33][];
+            Tuple<int, int> position = new Tuple<int, int>(PacManInitialY, PacManInitialX);
+            bool[][] connectedTiles = new bool[MapHeightInTiles + 2][];
             Stack<Tuple<int, int>> stack = new Stack<Tuple<int, int>>();
 
             if (map[position.Item1][position.Item2] == symbols[0] && map[position.Item1][position.Item2 + 1] == symbols[0])
             {
                 //Performs classical BFS from pacman initial position
-                connectedTiles[position.Item1] = new bool[30];
+                connectedTiles[position.Item1] = new bool[MapWidthInTiles + 2];
                 connectedTiles[position.Item1][position.Item2] = true;
                 stack.Push(position);
-                while ((dotsFound != numOfDots || ghostHouse != 38) && stack.Count > 0)
+                while ((dotsFound != numOfDots || ghostHouse != GhostHouseSize) && stack.Count > 0)
                 {
                     position = stack.Pop();
                     if (map[position.Item1][position.Item2] != symbols[3] && 
-                        map[position.Item1][position.Item2] != symbols[4] && position.Item2 > 0 && position.Item2 < 29)
+                        map[position.Item1][position.Item2] != symbols[4] && position.Item2 > 0 && position.Item2 < MapWidthInTiles + 1)
                     {
                         //counts number of dots accessible from starting point for further comparison
                         if (map[position.Item1][position.Item2] != symbols[0])
                             dotsFound++;
                         if (connectedTiles[position.Item1] == null)
-                            connectedTiles[position.Item1] = new bool[30];
+                            connectedTiles[position.Item1] = new bool[MapWidthInTiles + 2];
                         if (connectedTiles[position.Item1 - 1] == null)
-                            connectedTiles[position.Item1 - 1] = new bool[30];
+                            connectedTiles[position.Item1 - 1] = new bool[MapWidthInTiles + 2];
                         if (connectedTiles[position.Item1 + 1] == null)
-                            connectedTiles[position.Item1 + 1] = new bool[30];
+                            connectedTiles[position.Item1 + 1] = new bool[MapWidthInTiles + 2];
                         if (connectedTiles[position.Item1][position.Item2 - 1] == false)
                         {
                             stack.Push(new Tuple<int, int>(position.Item1, position.Item2 - 1));
@@ -177,11 +184,9 @@ namespace PacManUltimate
                             if (map[position.Item1][position.Item2] == symbols[0] && map[position.Item1][position.Item2 + 1] == symbols[0])
                             {
                                 ghostPosition = new Tuple<int, int>(position.Item2, position.Item1);
-                                //Saves location of tiles above the gate for further in game use
-                                for (int k = 1; k < 6; k++)
-                                {
-                                    for (int l = -3; l < 5; l++)
-                                    {
+                                //Saves location of tiles above the gate for further in-game use
+                                for (int k = 1; k < 6; k++)                               
+                                    for (int l = -3; l < 5; l++)                                    
                                         switch (k)
                                         {
                                             case 1:
@@ -199,15 +204,13 @@ namespace PacManUltimate
                                                     ghostHouse++;
                                                 break;
                                         }
-                                    }
-                                }
                             }
                         }
                     }
                 }
                 //Compares number of found pellets and ghostHouse and decides whether the map is playable or not
                 //The fact that ghost house was found means it is accessible from pacman's starting postion
-                if (dotsFound == numOfDots && ghostHouse == 38)
+                if (dotsFound == numOfDots && ghostHouse == GhostHouseSize)
                     return new Tuple<bool, Tuple<int, int>>(true, ghostPosition);
                 else return new Tuple<bool,Tuple<int,int>> (false,null);
             }

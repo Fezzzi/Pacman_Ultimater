@@ -47,7 +47,9 @@
             this.HighScoreNum = new System.Windows.Forms.Label();
             this.ScoreNum = new System.Windows.Forms.Label();
             this.MusicButton = new System.Windows.Forms.Label();
+            this.MusicBtnSelector = new System.Windows.Forms.Label();
             this.SoundsButton = new System.Windows.Forms.Label();
+            this.SoundsBtnSelector = new System.Windows.Forms.Label();
             this.GameOverLabel = new System.Windows.Forms.Label();
             this.ErrorLdMap = new System.Windows.Forms.Label();
             this.ErrorInfo = new System.Windows.Forms.Label();
@@ -72,16 +74,16 @@
             this.Pacman.Visible = false;
             // 
             // ultimate
-            // 
+            //
             this.ultimate.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)));
             this.ultimate.AutoSize = true;
             this.ultimate.Font = new System.Drawing.Font("Ravie", 16F, ((System.Drawing.FontStyle)((System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Underline))), System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.ultimate.ForeColor = System.Drawing.Color.Yellow;
-            this.ultimate.Location = new System.Drawing.Point(99, 85);
+            this.ultimate.ForeColor = System.Drawing.Color.Red;
+            this.ultimate.Location = new System.Drawing.Point(80, 85);
             this.ultimate.Name = "ultimate";
             this.ultimate.Size = new System.Drawing.Size(267, 36);
             this.ultimate.TabIndex = 4;
-            this.ultimate.Text = "- ULTIMATE -";
+            this.ultimate.Text = "- ULTIMATER -";
             this.ultimate.Visible = false;
             // 
             // copyright
@@ -93,7 +95,7 @@
             this.copyright.Name = "copyright";
             this.copyright.Size = new System.Drawing.Size(179, 17);
             this.copyright.TabIndex = 5;
-            this.copyright.Text = "CopyRight Filip Horký 2017";
+            this.copyright.Text = "CopyRight Filip Horký 2018";
             this.copyright.Visible = false;
             // 
             // PressEnter
@@ -102,11 +104,11 @@
             this.PressEnter.AutoSize = true;
             this.PressEnter.Font = new System.Drawing.Font("Microsoft Sans Serif", 22F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
             this.PressEnter.ForeColor = System.Drawing.Color.White;
-            this.PressEnter.Location = new System.Drawing.Point(103, 189);
+            this.PressEnter.Location = new System.Drawing.Point(80, 189);
             this.PressEnter.Name = "PressEnter";
             this.PressEnter.Size = new System.Drawing.Size(256, 126);
             this.PressEnter.TabIndex = 6;
-            this.PressEnter.Text = "INSERT COIN\r\n                 \r\npress any key\r\n";
+            this.PressEnter.Text = "  INSERT COIN\r\n\r\n- press any key -\r\n";
             this.PressEnter.Visible = false;
             // 
             // openFileDialog1
@@ -262,14 +264,25 @@
             this.MusicButton.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
             this.MusicButton.FlatStyle = System.Windows.Forms.FlatStyle.Popup;
             this.MusicButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 24F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this.MusicButton.ForeColor = System.Drawing.Color.Black;
-            this.MusicButton.Location = new System.Drawing.Point(146, 123);
+            this.MusicButton.ForeColor = System.Drawing.Color.White;
+            this.MusicButton.Location = new System.Drawing.Point(140, 120);
             this.MusicButton.Name = "MusicButton";
             this.MusicButton.Size = new System.Drawing.Size(155, 48);
             this.MusicButton.TabIndex = 18;
             this.MusicButton.Text = "MUSIC";
             this.MusicButton.Click += new System.EventHandler(this.MusicButton_Click);
+            this.MusicButton.MouseEnter += new System.EventHandler(this.MusicButton_MouseEnter);
             this.MusicButton.Visible = false;
+            //
+            // MusicBtnSelector
+            //
+            this.MusicBtnSelector.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)));
+            this.MusicBtnSelector.Location = new System.Drawing.Point(130, 120);
+            this.MusicBtnSelector.Name = "MusicBtnSelector";
+            this.MusicBtnSelector.Size = new System.Drawing.Size(48, 48);
+            this.MusicBtnSelector.TabIndex = 29;
+            this.MusicBtnSelector.BackColor = System.Drawing.Color.Yellow;
+            this.MusicBtnSelector.Visible = false;
             // 
             // SoundsButton
             // 
@@ -279,14 +292,26 @@
             this.SoundsButton.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
             this.SoundsButton.FlatStyle = System.Windows.Forms.FlatStyle.Popup;
             this.SoundsButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 24F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this.SoundsButton.ForeColor = System.Drawing.Color.Black;
-            this.SoundsButton.Location = new System.Drawing.Point(138, 233);
+            this.SoundsButton.ForeColor = System.Drawing.Color.White;
+            this.SoundsButton.Location = new System.Drawing.Point(140, 233);
             this.SoundsButton.Name = "SoundsButton";
             this.SoundsButton.Size = new System.Drawing.Size(172, 48);
             this.SoundsButton.TabIndex = 19;
             this.SoundsButton.Text = "SOUND";
             this.SoundsButton.Click += new System.EventHandler(this.SoundsButton_Click);
+            this.SoundsButton.MouseEnter += new System.EventHandler(this.SoundsButton_MouseEnter);
             this.SoundsButton.Visible = false;
+            //
+            // SoundsBtnSelector
+            //
+            this.SoundsBtnSelector.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)));
+            this.SoundsBtnSelector.Location = new System.Drawing.Point(130, 233);
+            this.SoundsBtnSelector.Name = "SoundsBtnSelector";
+            this.SoundsBtnSelector.Size = new System.Drawing.Size(48, 48);
+            this.SoundsBtnSelector.TabIndex = 28;
+            this.SoundsBtnSelector.BackColor = System.Drawing.Color.Black;
+            this.SoundsBtnSelector.Visible = false;
+
             // 
             // GameOverLabel
             // 
@@ -416,6 +441,8 @@
             this.Controls.Add(this.ErrorLdMap);
             this.Controls.Add(this.GameOverLabel);
             this.Controls.Add(this.SoundsButton);
+            this.Controls.Add(this.SoundsBtnSelector);
+            this.Controls.Add(this.MusicBtnSelector);
             this.Controls.Add(this.MusicButton);
             this.Controls.Add(this.ScoreNum);
             this.Controls.Add(this.HighScoreNum);
@@ -450,7 +477,6 @@
             }
             this.ResumeLayout(false);
             this.PerformLayout();
-
         }
 
         #endregion
@@ -472,6 +498,8 @@
         private System.Windows.Forms.Label ScoreNum;
         private System.Windows.Forms.Label MusicButton;
         private System.Windows.Forms.Label SoundsButton;
+        private System.Windows.Forms.Label MusicBtnSelector;
+        private System.Windows.Forms.Label SoundsBtnSelector;
         private System.Windows.Forms.Label GameOverLabel;
         private System.Windows.Forms.Label ErrorLdMap;
         private System.Windows.Forms.Label ErrorInfo;

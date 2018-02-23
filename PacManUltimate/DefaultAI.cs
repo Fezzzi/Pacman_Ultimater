@@ -6,35 +6,57 @@ using System.Threading.Tasks;
 
 namespace PacManUltimate
 {
-    class EntitiesClass
+    class DefaultAI
     {
         //Class providing methods for AI movement and easy program recognition of entities
         //Instruction for adding another AI algorithm:
-        //  1) Name your algorithm and add it to nType
-        //  2) To NextStep function add case nType.YourName record returning YourAlgorithm
-        //  3) Add YourAlgorithm function
-        //  4) In Form1.cs LoadEntities function change DefaultUIs to YourAlgorithm
+        //  1) Create Class that inherits from DefaultAI
+        //  2) Override methods for AI's behaviour:
+        //      2.1) HostileAttack - entity is hostile and attacking pacman
+        //      2.2) HostileRetreat - entity is hostile but is retreating from attack
+        //      2.3) Eaten - entity has been eaten
+        //      2.4) CanBeEaten - entity can be eaten by pacman
+
         public enum nType
         {
-            PLAYER1, PLAYER2, HOSTILERNDM, EATEN
+            PLAYER1, PLAYER2, HOSTILEATTACK, HOSTILERETREAT, CANBEEATEN, EATEN
         }
 
         public Direction.nType NextStep
             (nType entity, Tuple<int,int> position, Tuple<int,int> target, Direction.nType direction, Tile.nType?[][] map)
         {
             //Calls function to return AI's next direction
-            switch (entity)
-            {
-                case nType.HOSTILERNDM:
-                    return RandomAI(position, direction, map);
-                case nType.EATEN:
-                    return RandomAI(position, direction, map);
-                default:
-                    return Direction.nType.DIRECTION;
-            }
+            if (entity == nType.HOSTILERETREAT)
+                return HostileRetreat(position, direction, map);
+            else if (entity == nType.EATEN)
+                return Eaten(position, direction, map);
+            else if (entity == nType.CANBEEATEN)
+                return CanBeEaten(position, direction, map);
+            else
+                return HostileAttack(position, direction, map);
         }
 
-        private Direction.nType RandomAI(Tuple<int, int> position, Direction.nType direction, Tile.nType?[][] map)
+        virtual public Direction.nType HostileAttack(Tuple<int, int> position, Direction.nType direction, Tile.nType?[][] map)
+        {
+            return RandomAI(position, direction, map);
+        }
+
+        virtual public Direction.nType HostileRetreat(Tuple<int, int> position, Direction.nType direction, Tile.nType?[][] map)
+        {
+            return RandomAI(position, direction, map);
+        }
+
+        virtual public Direction.nType Eaten(Tuple<int, int> position, Direction.nType direction, Tile.nType?[][] map)
+        {
+            return RandomAI(position, direction, map);
+        }
+
+        virtual public Direction.nType CanBeEaten(Tuple<int, int> position, Direction.nType direction, Tile.nType?[][] map)
+        {
+            return RandomAI(position, direction, map);
+        }
+
+        public Direction.nType RandomAI(Tuple<int, int> position, Direction.nType direction, Tile.nType?[][] map)
         {
             //Tests all four direction and randomly chooses one of them
             //if there is no other way chooses direction UI came from or stops it
@@ -62,7 +84,7 @@ namespace PacManUltimate
                 return Direction.nType.DIRECTION;
         }
 
-        private bool CanAdd(Tile.nType? tile)
+        public bool CanAdd(Tile.nType? tile)
         {
             //Tests if the examined tile is free to move on
             if (tile == Tile.nType.DOT || tile == Tile.nType.POWERDOT || tile == Tile.nType.FREE)
