@@ -7,15 +7,25 @@ using System.Threading.Tasks;
 
 namespace PacManUltimate
 {
+    /// <summary>
+    /// Class provides resources for saving text symbols as tiles and easier further manipulation.
+    /// Also contains usefull function for converting selected keywords to tiles.
+    /// </summary>
     class Tile
     {
-        //Class provides resources for saving text symbols as tiles and easier further manipulation
-        //also contains usefull function for converting selected keywords to tiles
+        /// <summary>
+        /// Enumerable for possible tile states.
+        /// </summary>
         public enum nType { DOT, POWERDOT, FREE, GATE, LWALLDOUBLE, RWALLDOUBLE,
             TWALLDOUBLE, BWALLDOUBLE, LWALLSINGLE, RWALLSINGLE, TWALLSINGLE,
             BWALLSINGLE, TLCURVEDOUBLE, TRCURVEDOUBLE, BRCURVEDOUBLE, BLCURVEDOUBLE,
             TLCURVESINGLE, TRCURVESINGLE, BRCURVESINGLE, BLCURVESINGLE, TILE};
 
+        /// <summary>
+        /// Function for conversion between string representation of tile states and enumerable.
+        /// </summary>
+        /// <param name="tile">string representation of tile state.</param>
+        /// <returns>Returns coresponding tile state.</returns>
         public nType ReturnType(string tile)
         {
             nType ret;
@@ -88,6 +98,12 @@ namespace PacManUltimate
             return ret;
         }
 
+        /// <summary>
+        /// Function for drawing tile states as their curve representation.
+        /// </summary>
+        /// <param name="tile">Processed tile.</param>
+        /// <param name="location">Tile's top left corner.</param>
+        /// <param name="color">Desired color of tile's curve representation.</param>
         public void DrawTile(nType tile, Graphics g, Point location, Color color)
         {
             switch (tile)
@@ -134,6 +150,8 @@ namespace PacManUltimate
                     break;
             }
         }
+
+        #region - TILE STATES Curves representations -
 
         public void FreeTile(Graphics g, Point location)
         {
@@ -269,5 +287,7 @@ namespace PacManUltimate
                                                         new Point(location.X + 10,location.Y + 5),
                                                         new Point(location.X + 15, location.Y + 7)});
         }
+
+        #endregion
     }
 }

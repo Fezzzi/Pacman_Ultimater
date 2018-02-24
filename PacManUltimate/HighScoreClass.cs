@@ -7,16 +7,22 @@ using System.IO;
 
 namespace PacManUltimate
 {
+    /// <summary>
+    /// Contains two simple functions one for loading and other for saving highscore.
+    /// </summary>
     class HighScoreClass
     {
         const int ImportantLine = 10;
         const int LinesInFile = 15;
 
-        //Contains two simple functions one for loading and other for saving highscore
+        /// <summary>
+        /// Function for HighScore loading.
+        /// </summary>
+        /// <returns></returns>
         public int LoadHighScore()
         {
-            //The actual highscore is saved at the 10th line of the config file
-            //it is just necesary to convert it from binary to decimaly number
+            // The actual highscore is saved at the 10th line of the config file.
+            // It is necesary to just convert it from binary to decimaly number.
             int highScore = 0;
             StreamReader sr = new StreamReader("../config.bin");
             for (int i = 0; i < ImportantLine; i++)
@@ -31,11 +37,15 @@ namespace PacManUltimate
             return highScore;
         }
 
+        /// <summary>
+        /// Function for HighScore Saving.
+        /// </summary>
+        /// <param name="newHighScore">New HighScore to be saved to config file.</param>
         public void SaveHighScore(int newHighScore)
         {
-            //Function generates 9 lines of random binary numbers of aproximately same length as highscore
-            //after that the actual highscore is converted to binary number and saved at 10th line
-            //at the end another 4 random lines are generated and saved into the file
+            // Function generates 9 lines of random binary numbers of aproximately same length as highscore.
+            // After that the actual highscore is converted to binary number and saved at 10th line.
+            // Another 4 lines of random binary data are generated and saved at the end of the file.
             StreamWriter sw = new StreamWriter("../config.bin");
             Random rndm = new Random();
             string binaryScore = Convert.ToString(newHighScore, 2);

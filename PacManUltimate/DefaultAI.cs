@@ -6,9 +6,11 @@ using System.Threading.Tasks;
 
 namespace PacManUltimate
 {
+    /// <summary>
+    /// Class providing methods for AI movement and enumeration for easy programmicaly recognition of entities.
+    /// </summary>
     class DefaultAI
     {
-        //Class providing methods for AI movement and easy program recognition of entities
         //Instruction for adding another AI algorithm:
         //  1) Create Class that inherits from DefaultAI
         //  2) Override methods for AI's behaviour:
@@ -24,49 +26,92 @@ namespace PacManUltimate
             State = state;
         }
 
+        /// <summary>
+        /// Enumeration that characterizes all the possible entity's states.
+        /// </summary>
         public enum nType
         {
             PLAYER1, PLAYER2, HOSTILEATTACK, HOSTILERETREAT, CANBEEATEN, EATEN
         }
 
+        /// <summary>
+        /// Function that chooses entity's next position based on set AI algorithms and entity's current state.
+        /// </summary>
+        /// <param name="position">The entity's position.</param>
+        /// <param name="target">Target tile.</param>
+        /// <param name="direction">The entity's curent direction.</param>
+        /// <returns>Returns chosen direction for the entity.</returns>
         public Direction.nType NextStep
             (Tuple<int,int> position, Tuple<int,int> target, Direction.nType direction, Tile.nType?[][] map)
         {
             //Calls function to return AI's next direction
             if (State == nType.HOSTILERETREAT)
-                return HostileRetreat(position, direction, map);
+                return HostileRetreat(position, target, direction, map);
             else if (State == nType.EATEN)
-                return Eaten(position, direction, map);
+                return Eaten(position, target, direction, map);
             else if (State == nType.CANBEEATEN)
-                return CanBeEaten(position, direction, map);
+                return CanBeEaten(position, target, direction, map);
             else
-                return HostileAttack(position, direction, map);
+                return HostileAttack(position, target, direction, map);
         }
 
-        virtual public Direction.nType HostileAttack(Tuple<int, int> position, Direction.nType direction, Tile.nType?[][] map)
+        /// <summary>
+        /// AI Algorithm choosing next position for hostille entities during their attack phase.
+        /// </summary>
+        /// <param name="position">The entity's position.</param>
+        /// <param name="target">Target tile (Usually pacman's location).</param>
+        /// <param name="direction">The entity's curent direction.</param>
+        /// <returns>Returns chosen direction for the entity.</returns>
+        virtual public Direction.nType HostileAttack(Tuple<int, int> position, Tuple<int, int> target, Direction.nType direction, Tile.nType?[][] map)
         {
             return RandomAI(position, direction, map);
         }
 
-        virtual public Direction.nType HostileRetreat(Tuple<int, int> position, Direction.nType direction, Tile.nType?[][] map)
+        /// <summary>
+        /// AI Algorithm choosing next position for hostille entities during their retreat phase.
+        /// </summary>
+        /// <param name="position">The entity's position.</param>
+        /// <param name="target">Target tile (Usually some corner tile).</param>
+        /// <param name="direction">The entity's curent direction.</param>
+        /// <returns>Returns chosen direction for the entity.</returns>
+        virtual public Direction.nType HostileRetreat(Tuple<int, int> position, Tuple<int, int> target, Direction.nType direction, Tile.nType?[][] map)
         {
             return RandomAI(position, direction, map);
         }
 
-        virtual public Direction.nType Eaten(Tuple<int, int> position, Direction.nType direction, Tile.nType?[][] map)
+        /// <summary>
+        /// AI Algorithm choosing next position for eaten entities.
+        /// </summary>
+        /// <param name="position">The entity's position.</param>
+        /// <param name="target">Target tile (Usuallyghost house entrance tile).</param>
+        /// <param name="direction">The entity's curent direction.</param>
+        /// <returns>Returns chosen direction for the entity.</returns>
+        virtual public Direction.nType Eaten(Tuple<int, int> position, Tuple<int, int> target, Direction.nType direction, Tile.nType?[][] map)
         {
             return RandomAI(position, direction, map);
         }
 
-        virtual public Direction.nType CanBeEaten(Tuple<int, int> position, Direction.nType direction, Tile.nType?[][] map)
+        /// <summary>
+        /// AI Algorithm choosing next position for vulnerable entities.
+        /// </summary>
+        /// <param name="position">The entity's position.</param>
+        /// <param name="target">Target tile.</param>
+        /// <param name="direction">The entity's curent direction.</param>
+        /// <returns>Returns chosen direction for the entity.</returns>
+        virtual public Direction.nType CanBeEaten(Tuple<int, int> position, Tuple<int, int> target, Direction.nType direction, Tile.nType?[][] map)
         {
             return RandomAI(position, direction, map);
         }
 
+        /// <summary>
+        /// Random AI algorithm that decides new direction randomly at each crossroad.
+        /// if there is no other way, AI chooses direction it came from or stops.
+        /// </summary>
+        /// <param name="position">The entity's position.</param>
+        /// <param name="direction">The entity's curent direction.</param>
+        /// <returns>Returns chosen direction for the entity.</returns>
         public Direction.nType RandomAI(Tuple<int, int> position, Direction.nType direction, Tile.nType?[][] map)
         {
-            //Tests all four direction and randomly chooses one of them
-            //if there is no other way chooses direction UI came from or stops it
             Random rnmd = new Random();
             List<Tuple<int, int>> possibilities = new List<Tuple<int, int>>();
             Direction dir = new Direction();
@@ -91,9 +136,14 @@ namespace PacManUltimate
                 return Direction.nType.DIRECTION;
         }
 
+        /// <summary>
+        /// Tests if the examined tile is free to move on.
+        /// </summary>
+        /// <param name="tile">The examined tile.</param>
+        /// <returns>Boolean indicating occupancy of the examined tile.</returns>
         public bool CanAdd(Tile.nType? tile)
         {
-            //Tests if the examined tile is free to move on
+            //
             if (tile == Tile.nType.DOT || tile == Tile.nType.POWERDOT || tile == Tile.nType.FREE)
                 return true;
             else

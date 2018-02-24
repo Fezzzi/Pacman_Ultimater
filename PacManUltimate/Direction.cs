@@ -6,18 +6,28 @@ using System.Threading.Tasks;
 
 namespace PacManUltimate
 {
+    /// <summary>
+    /// Class providing data structure for directions via enumerable nType.
+    /// It also provides two usefull functions for conversions.
+    /// </summary>
     class Direction
     {
-        //Class provides data structure for directions done vie enumerable nType
-        //It also provides two usefull functions for conversions
+
+        /// <summary>
+        /// Enumarable representing possible directions.
+        /// </summary>
         public enum nType
         {
             LEFT, RIGHT, UP, DOWN, DIRECTION
         }
 
+        /// <summary>
+        /// Function for converting from direction to delta tuple.
+        /// </summary>
+        /// <param name="direction">Input direction enumerable.</param>
+        /// <returns>Returns input's representation as delta tuple of two integers.</returns>
         public Tuple<int,int> DirectionToTuple(nType direction)
         {
-            //Function for converting from direction to delta tuple
             switch (direction)
             {
                 case nType.DOWN:
@@ -33,9 +43,14 @@ namespace PacManUltimate
             }
         }
 
+        /// <summary>
+        /// Function for converting from delta tuple to nType direction.
+        /// </summary>
+        /// <param name="tuple">Input delta tuple of two integers.</param>
+        /// <returns>Returns input's representation as member of nType enumerable of possible directions.</returns>
         public nType TupleToDirection(Tuple<int,int> tuple)
         {
-            //Function for converting from delta tuple to nType direction
+            //
             if(tuple.Item1 == 0)
             {
                 if (tuple.Item2 == 1)
