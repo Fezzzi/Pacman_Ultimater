@@ -13,8 +13,8 @@ namespace PacManUltimate
         const int GhostHouseSize = 38;
         const int MapWidthInTiles = 28;
         const int MapHeightInTiles = 31;
-        const int PacManInitialY = 24;
-        const int PacManInitialX = 14;
+        const int PacManInitialY = 23;
+        const int PacManInitialX = 13;
 
         //Handles manipulation with text files containing map
         public Tuple<Tile.nType?[][], int, Tuple<int,int>> Map;
@@ -130,7 +130,7 @@ namespace PacManUltimate
             //and all pellets are accessible for both pacman and ghosts
             int ghostHouse = 0, dotsFound = 0;
             Tuple<int, int> ghostPosition = null;
-            Tuple<int, int> position = new Tuple<int, int>(PacManInitialY, PacManInitialX);
+            Tuple<int, int> position = new Tuple<int, int>(PacManInitialY + 1, PacManInitialX + 1);
             bool[][] connectedTiles = new bool[MapHeightInTiles + 2][];
             Stack<Tuple<int, int>> stack = new Stack<Tuple<int, int>>();
 

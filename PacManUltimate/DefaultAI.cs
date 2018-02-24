@@ -17,20 +17,27 @@ namespace PacManUltimate
         //      2.3) Eaten - entity has been eaten
         //      2.4) CanBeEaten - entity can be eaten by pacman
 
+        public nType State;
+
+        public DefaultAI(nType state)
+        {
+            State = state;
+        }
+
         public enum nType
         {
             PLAYER1, PLAYER2, HOSTILEATTACK, HOSTILERETREAT, CANBEEATEN, EATEN
         }
 
         public Direction.nType NextStep
-            (nType entity, Tuple<int,int> position, Tuple<int,int> target, Direction.nType direction, Tile.nType?[][] map)
+            (Tuple<int,int> position, Tuple<int,int> target, Direction.nType direction, Tile.nType?[][] map)
         {
             //Calls function to return AI's next direction
-            if (entity == nType.HOSTILERETREAT)
+            if (State == nType.HOSTILERETREAT)
                 return HostileRetreat(position, direction, map);
-            else if (entity == nType.EATEN)
+            else if (State == nType.EATEN)
                 return Eaten(position, direction, map);
-            else if (entity == nType.CANBEEATEN)
+            else if (State == nType.CANBEEATEN)
                 return CanBeEaten(position, direction, map);
             else
                 return HostileAttack(position, direction, map);

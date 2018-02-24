@@ -16,22 +16,30 @@ namespace PacManUltimate
     {
         #region - VARIABLES Block -
 
+        int HighScore = -1;
         bool gameOn = false, Player2 = false;
         bool Sound = true, Music = true;
         List<Label> activeElements = new List<Label>();
         Tuple<mn, Label> menuSelected;
         mn menuLayer;
         Label ScoreBox = new Label(), HighScoreBox = new Label(), Score2Box = new Label();
+        List<char> symbols = new List<char>();
 
         #endregion
 
-        #region - MENU Block -
+        #region - GENERAL Block -
 
+        /// <summary>
+        /// Performs whole form's initialization.
+        /// </summary>
         public PacManUltimate()
         {
             InitializeComponent(true);
         }
 
+        /// <summary>
+        /// Method handling form's load request.
+        /// </summary>
         private void PacManUltimate_Load(object sender, EventArgs e)
         {
             menuLayer = mn.start;
@@ -39,11 +47,28 @@ namespace PacManUltimate
             Menu(Menu_Start);
         }
 
-        private new void Menu(Action Menu_Func)     // Use of built-in delegate for void functions that take no parameters 
+        /// <summary>
+        /// Is called when the key is pressed. Decides between two methods to be called one for keys pressed in menu
+        /// and second for ones pressed during the gameplay.
+        /// </summary>
+        private void PacManUltimate_KeyDown(object sender, KeyEventArgs e)
         {
-            // Function that makes Menu work by simple enabling and disabling visibility of selected controls.
-            // Depends on the part of menu the player is in.
+            if (!gameOn)
+                MenuKeyDownHandler(e);
+            else
+                GameKeyDownHandler(e);
+        }
 
+        #endregion
+
+        #region - MENU Block -
+
+        /// <summary>
+        /// Function that makes Menu work by simple enabling and disabling visibility of selected controls.
+        /// </summary>
+        /// <param name="Menu_Func">Function to be called (Built-in delegate for void function that takes no parameters).</param>
+        private new void Menu(Action Menu_Func)
+        {
             for (int i = 0; i < activeElements.Count; i++)
                 activeElements[i].Visible = false;
 
@@ -179,14 +204,19 @@ namespace PacManUltimate
                 SoundsButton.BackColor = Color.Gray;
         }
 
+        /// <summary>
+        /// Loads predefined original map and calls MakeItHappen to procced to gameplay.
+        /// </summary>
         private void OrgGame_Click(object sender, EventArgs e)
         {
-            //loads predefined original map and calls MakeItHappen to procced to game
             LoadMap loadMap = new LoadMap("../OriginalMap.txt");
             if (loadMap.Map != null)
                 MakeItHappen(loadMap);
         }
 
+        /// <summary>
+        /// Opens menu for advanced map loading.
+        /// </summary>
         private void AdvancedLdBut_Click(object sender, EventArgs e)
         {
             menuLayer = mn.submenu;
@@ -198,11 +228,13 @@ namespace PacManUltimate
                 activeElements[i].Visible = true;
         }
 
+        /// <summary>
+        /// Opens file dialog after clinking on Select Map in menu.
+        /// Tries to open and load selected map from the file afterwards.
+        /// Calls procedure MakeItHappen in case of success.
+        /// </summary>
         private void selectMap_Click(object sender, EventArgs e)
         {
-            //Opens file dialog after clinking on Select Map in menu
-            //Afterwards tries to open a load a map from the file
-            //In case of success calls procedure MakeItHappen
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
                 menuLayer = mn.submenu;
@@ -221,6 +253,9 @@ namespace PacManUltimate
             }
         }
 
+        /// <summary>
+        /// Enables/Disables Music and Music button in menu - settings.
+        /// </summary>
         private void MusicButton_Click(object sender, EventArgs e)
         {
             Music = !Music;
@@ -236,6 +271,9 @@ namespace PacManUltimate
             }
         }
 
+        /// <summary>
+        /// Enables/Disables Sounds and Sounds button in menu - settings.
+        /// </summary>
         private void SoundsButton_Click(object sender, EventArgs e)
         {
             Sound = !Sound;
@@ -251,6 +289,9 @@ namespace PacManUltimate
             }
         }
 
+        /// <summary>
+        /// Simulates select map click and sets number of players to 2 in case of successfull map load.
+        /// </summary>
         private void VS_Click(object sender, EventArgs e)
         {
             selectMap_Click(new object(), EventArgs.Empty);
@@ -270,9 +311,13 @@ namespace PacManUltimate
             Menu(Menu_HighScore);
         }
 
+        /// <summary>
+        /// Function to convert typed characters separated by ';' to string.
+        /// </summary>
+        /// <param name="source">Input characters.</param>
+        /// <returns>String of characters separated with ';'.</returns>
         private string CharListToString(List<char> source)
         {
-            //Function to fill string  with typed characters separated by ';'
             string output = "";
             if (source.Count() > 0)
                 output = source[0].ToString();
@@ -284,6 +329,10 @@ namespace PacManUltimate
             return output;
         }
 
+        /// <summary>
+        /// Changes selected element in menu.
+        /// </summary>
+        /// <param name="delta">Indicates whether to move up or down in menu (Values +1/-1).</param>
         private void MoveInMenu(int delta)
         {
             const byte menuSize = 5;
@@ -292,6 +341,9 @@ namespace PacManUltimate
             menuSelected = new Tuple<mn, Label>((mn)(((int)menuSelected.Item1 + delta + menuSize) % menuSize), newLabel);
         }
 
+        /// <summary>
+        /// Changes selected element in settings.
+        /// </summary>
         private void MoveInSettings()
         {
             if (SoundsBtnSelector.BackColor == Color.Yellow)
@@ -300,18 +352,28 @@ namespace PacManUltimate
                 SoundsButton_MouseEnter(new object(), new EventArgs());
         }
 
+        /// <summary>
+        /// Selects SoundsButton when mouse cursor enters its domain.
+        /// </summary>
         private void SoundsButton_MouseEnter(object sender, EventArgs e)
         {
             SoundsBtnSelector.BackColor = Color.Yellow;
             MusicBtnSelector.BackColor = Color.Black;
         }
 
+        /// <summary>
+        /// Selects MusicButton when mouse cursor enters its domain.
+        /// </summary>
         private void MusicButton_MouseEnter(object sender, EventArgs e)
         {
             SoundsBtnSelector.BackColor = Color.Black;
             MusicBtnSelector.BackColor = Color.Yellow;
         }
 
+        /// <summary>
+        /// Function handling key pressing in menu.
+        /// </summary>
+        /// <param name="e">Identifies pressed key.</param>
         private void MenuKeyDownHandler(KeyEventArgs e)
         {
             if (menuLayer == mn.start)
@@ -390,24 +452,22 @@ namespace PacManUltimate
             }
         }
 
-        private void PacManUltimate_KeyDown(object sender, KeyEventArgs e)
-        {
-            // Function that handles player's input.
-            // Seperate branch for menu input and game input.
-            if (!gameOn)
-                MenuKeyDownHandler(e);
-            else
-                GameKeyDownHandler(e);
-        }
-
+        /// <summary>
+        /// Function that provides color change of labels in menu on cursor entry of label's domain.
+        /// </summary>
         private void Hover(object sender, EventArgs e)
         {
-            //Function that provides color change of labels in menu          
+            //      
             Label label = (Label)sender;
             HighlightSelected(menuSelected.Item2, label);
             menuSelected = new Tuple<mn, Label>(LabelToEnum(label), label);
         }
 
+        /// <summary>
+        /// Function that switches active labels by unhighlighting the old one and highlighting the new one.
+        /// </summary>
+        /// <param name="prevLabel">Previous active label.</param>
+        /// <param name="newLabel">New active label.</param>
         private void HighlightSelected(Label prevLabel, Label newLabel)
         {
             prevLabel.ForeColor = Color.White;
@@ -420,8 +480,16 @@ namespace PacManUltimate
 
         #region - MN enum -
 
+        /// <summary>
+        /// Enumaration for identifying menu states.
+        /// </summary>
         enum mn { game = 0, selectmap, settings, vs, highscore, start, submenu = 6 };
 
+        /// <summary>
+        /// Function that associates selected labels to menu states.
+        /// </summary>
+        /// <param name="label">Label to be associated.</param>
+        /// <returns>Resulting associated menu state (default: mn.start).</returns>
         private mn LabelToEnum(Label label)
         {
             if (label == OrgGame)
@@ -437,6 +505,11 @@ namespace PacManUltimate
             else return mn.start;
         }
 
+        /// <summary>
+        /// Function that associates menu states to selected labels.
+        /// </summary>
+        /// <param name="selected">Menu state to be associated.</param>
+        /// <returns>Resulting associated label (default: OrgGame).</returns>
         private Label EnumToLabel(mn selected)
         {
             if (selected == mn.game)
@@ -452,6 +525,11 @@ namespace PacManUltimate
             else return OrgGame;
         }
 
+        /// <summary>
+        /// Function that associates on-click functions to menu states.
+        /// </summary>
+        /// <param name="selected">Menu state to be associated.</param>
+        /// <returns>Resulting on-click function (default: OrgGame_Click).</returns>
         private Action<object, EventArgs> EnumToAction(mn selected)
         {
             if (selected == mn.game)
