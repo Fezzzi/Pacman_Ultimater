@@ -13,6 +13,8 @@ namespace PacManUltimate
     /// </summary>
     class Tile
     {
+        public nType tile;
+
         /// <summary>
         /// Enumerable for possible tile states.
         /// </summary>
@@ -26,76 +28,83 @@ namespace PacManUltimate
         /// </summary>
         /// <param name="tile">string representation of tile state.</param>
         /// <returns>Returns coresponding tile state.</returns>
-        public nType ReturnType(string tile)
+        public Tile(string tile)
         {
-            nType ret;
             switch (tile)
             {
                 case " ":
-                    ret = nType.FREE;
+                    this.tile = nType.FREE;
                     break;
                 case "X":
-                    ret = nType.GATE;
+                    this.tile = nType.GATE;
                     break;
                 case ".":
-                    ret = nType.DOT;
+                    this.tile = nType.DOT;
                     break;
                 case "o":
-                    ret = nType.POWERDOT;
+                    this.tile = nType.POWERDOT;
                     break;
                 case "DWL":
-                    ret = nType.LWALLDOUBLE;
+                    this.tile = nType.LWALLDOUBLE;
                     break;
                 case "DWR":
-                    ret = nType.RWALLDOUBLE;
+                    this.tile = nType.RWALLDOUBLE;
                     break;
                 case "DWT":
-                    ret = nType.TWALLDOUBLE;
+                    this.tile = nType.TWALLDOUBLE;
                     break;
                 case "DWB":
-                    ret = nType.BWALLDOUBLE;
+                    this.tile = nType.BWALLDOUBLE;
                     break;
                 case "SWL":
-                    ret = nType.LWALLSINGLE;
+                    this.tile = nType.LWALLSINGLE;
                     break;
                 case "SWR":
-                    ret = nType.RWALLSINGLE;
+                    this.tile = nType.RWALLSINGLE;
                     break;
                 case "SWT":
-                    ret = nType.TWALLSINGLE;
+                    this.tile = nType.TWALLSINGLE;
                     break;
                 case "SWB":
-                    ret = nType.BWALLSINGLE;
+                    this.tile = nType.BWALLSINGLE;
                     break;
                 case "DCTL":
-                    ret = nType.TLCURVEDOUBLE;
+                    this.tile = nType.TLCURVEDOUBLE;
                     break;
                 case "DCTR":
-                    ret = nType.TRCURVEDOUBLE;
+                    this.tile = nType.TRCURVEDOUBLE;
                     break;
                 case "DCBR":
-                    ret = nType.BRCURVEDOUBLE;
+                    this.tile = nType.BRCURVEDOUBLE;
                     break;
                 case "DCBL":
-                    ret = nType.BLCURVEDOUBLE;
+                    this.tile = nType.BLCURVEDOUBLE;
                     break;
                 case "SCTL":
-                    ret = nType.TLCURVESINGLE;
+                    this.tile = nType.TLCURVESINGLE;
                     break;
                 case "SCTR":
-                    ret = nType.TRCURVESINGLE;
+                    this.tile = nType.TRCURVESINGLE;
                     break;
                 case "SCBR":
-                    ret = nType.BRCURVESINGLE;
+                    this.tile = nType.BRCURVESINGLE;
                     break;
                 case "SCBL":
-                    ret = nType.BLCURVESINGLE;
+                    this.tile = nType.BLCURVESINGLE;
                     break;
                 default:
-                    ret = nType.TILE;
+                    this.tile = nType.TILE;
                     break;
             }
-            return ret;
+        }
+
+        /// <summary>
+        /// Constructor for tile map deep copying.
+        /// </summary>
+        /// <param name="tileType">Source tile type.</param>
+        public Tile(nType tileType)
+        {
+            this.tile = tileType;
         }
 
         /// <summary>
@@ -104,7 +113,7 @@ namespace PacManUltimate
         /// <param name="tile">Processed tile.</param>
         /// <param name="location">Tile's top left corner.</param>
         /// <param name="color">Desired color of tile's curve representation.</param>
-        public void DrawTile(nType tile, Graphics g, Point location, Color color)
+        public void DrawTile(Graphics g, Point location, Color color)
         {
             switch (tile)
             {
@@ -151,12 +160,12 @@ namespace PacManUltimate
             }
         }
 
-        #region - TILE STATES Curves representations -
-
-        public void FreeTile(Graphics g, Point location)
+        public void FreeTile(Graphics g, Point location, Color bkgColor)
         {
-            g.FillRectangle(new SolidBrush(Color.Black), new Rectangle(location.X, location.Y, 16, 16));
+            g.FillRectangle(new SolidBrush(bkgColor), new Rectangle(location.X, location.Y, 16, 16));
         }
+
+        #region - TILE STATES Curves representations -
 
         private void Dot(Graphics g, Point location)
         {
@@ -198,22 +207,22 @@ namespace PacManUltimate
         private void TWallDouble(Graphics g, Point location, Color color)
         {
             g.FillRectangle(new SolidBrush(color), new Rectangle(location.X, location.Y, 16, 2));
-            g.FillRectangle(new SolidBrush(color), new Rectangle(location.X, location.Y + 6, 2, 16));
+            g.FillRectangle(new SolidBrush(color), new Rectangle(location.X, location.Y + 6, 16, 2));
         }
         private void TWallSingle(Graphics g, Point location, Color color)
         {
-            g.FillRectangle(new SolidBrush(color), new Rectangle(location.X, location.Y + 6, 2, 16));
+            g.FillRectangle(new SolidBrush(color), new Rectangle(location.X, location.Y + 6, 16, 2));
         }
 
         private void BWallDouble(Graphics g, Point location, Color color)
         {
             g.FillRectangle(new SolidBrush(color), new Rectangle(location.X, location.Y + 14, 16, 2));
-            g.FillRectangle(new SolidBrush(color), new Rectangle(location.X, location.Y + 8, 2, 16));
+            g.FillRectangle(new SolidBrush(color), new Rectangle(location.X, location.Y + 8, 16, 2));
         }
 
         private void BWallSingle(Graphics g, Point location, Color color)
         {
-            g.FillRectangle(new SolidBrush(color), new Rectangle(location.X, location.Y + 8, 2, 16));
+            g.FillRectangle(new SolidBrush(color), new Rectangle(location.X, location.Y + 8, 16, 2));
         }
 
         private void TLCurveDouble(Graphics g, Point location, Color color)

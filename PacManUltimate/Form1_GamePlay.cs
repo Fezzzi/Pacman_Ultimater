@@ -24,19 +24,21 @@ namespace PacManUltimate
         WMPLib.WindowsMediaPlayer SoundPlayer = new WMPLib.WindowsMediaPlayer();
         WMPLib.WindowsMediaPlayer SoundPlayer2 = new WMPLib.WindowsMediaPlayer();
         System.Media.SoundPlayer MusicPlayer = new System.Media.SoundPlayer();
-        Tile.nType?[][] MapFresh;
+        Tile[][] MapFresh;
         Direction.nType NewDirection1 = Direction.nType.DIRECTION;
         Direction.nType NewDirection2 = Direction.nType.DIRECTION;
-        PictureBox[][] PictureMap;
+        Point[] redrawPellets = new Point[RDPSize];
+        byte RDPIndex = 0;
 
+        const byte RDPSize = 12;
         const int MaxLevel = 256;
         const int BonusLifeScore = 10000;
         const int PelletScore = 10;
         const int PowerPelletScore = 50;
         const int BaseEatEmTimer = 100;
         const int BaseGhostReleaseTimer = 260;
-        const int GhostAccLimLevel = 30;
-        const int ghostMaxSpeed = 3;    // The smaller the number the faster the ghosts.
+        const byte GhostAccLimLevel = 30;
+        const byte ghostMaxSpeed = 3;    // The smaller the number the faster the ghosts.
         const int ghostBaseSpeed = (GhostAccLimLevel / 2) + ghostMaxSpeed + 1;
 
         #endregion
@@ -104,6 +106,8 @@ namespace PacManUltimate
                 hscr.SaveHighScore(Score);
             }
             MusicPlayer.Stop();
+            this.AutoSize = true;
+            this.Size = defSize;
             this.Controls.Clear();
             components.Dispose();
             InitializeComponent(false);
@@ -167,10 +171,10 @@ namespace PacManUltimate
                 int indexX = entity.Item1 + x;
                 int indexY = entity.Item2 + y;
 
-                if (indexX < 0 || indexX >= FieldSizeInColumns || indexY < 0 || indexY > FieldSizeInRows
-                    || MapFresh[indexY][indexX] == Tile.nType.FREE
-                    || MapFresh[indexY][indexX] == Tile.nType.DOT
-                    || MapFresh[indexY][indexX] == Tile.nType.POWERDOT)
+                if (indexX < 0 || indexX >= FieldSizeInColumns || indexY < 0 || indexY >= FieldSizeInRows
+                    || MapFresh[indexY][indexX].tile == Tile.nType.FREE
+                    || MapFresh[indexY][indexX].tile == Tile.nType.DOT
+                    || MapFresh[indexY][indexX].tile == Tile.nType.POWERDOT)
                     return true;
                 else
                     return false;
@@ -183,7 +187,7 @@ namespace PacManUltimate
         /// <param name="newDirection">Variable with stored target direction (set to default in case of success).</param>
         /// <param name="entity">The observed entity.</param>
         private void SetToMove
-            (ref Direction.nType newDirection, Tuple<int, int, PictureBox, Direction.nType, DefaultAI> entity)
+            (ref Direction.nType newDirection, ref Tuple<int, int, PictureBox, Direction.nType, DefaultAI> entity)
         {
             //
             Direction dir = new Direction();
@@ -200,7 +204,7 @@ namespace PacManUltimate
         /// Checks whether the entity can continue in the direction it goes otherwise stops it.
         /// </summary>
         /// <param name="entity">The observed Entity.</param>
-        private void CanMove(Tuple<int, int, PictureBox, Direction.nType, DefaultAI> entity)
+        private void CanMove(ref Tuple<int, int, PictureBox, Direction.nType, DefaultAI> entity)
         {
             Direction dir = new Direction();
             Tuple<int, int> delta = dir.DirectionToTuple(entity.Item4);
@@ -220,6 +224,13 @@ namespace PacManUltimate
             (bool change, int dx, int dy, ref Tuple<int, int, PictureBox, Direction.nType, DefaultAI> entity)
         {
             const int ghostFlashingStart = 30;
+
+            if (entity.Item5.State != DefaultAI.nType.PLAYER1 && MapFresh[entity.Item2][entity.Item1].tile != Tile.nType.FREE)
+            {
+                redrawPellets[RDPIndex] = new Point(entity.Item2, entity.Item1);
+                ++RDPIndex;
+                RDPIndex %= RDPSize;
+            }
 
             entity.Item3.Location = new Point((entity.Item3.Location.X + dx), (entity.Item3.Location.Y + dy));
             if (change)
@@ -261,7 +272,7 @@ namespace PacManUltimate
         /// in case of teleporting (is reverse move from the program's point of view).
         /// </summary>
         /// <param name="entity">The observed entity.</param>
-        private void MoveIt(Tuple<int, int, PictureBox, Direction.nType, DefaultAI> entity)
+        private void MoveIt(ref Tuple<int, int, PictureBox, Direction.nType, DefaultAI> entity)
         {
             switch (entity.Item4)
             {
@@ -322,9 +333,9 @@ namespace PacManUltimate
                     int indexX = x + (j == 1 ? i : 0);
                     if (indexY < 0 || indexY >= FieldSizeInRows || indexX < 0 || indexX >= FieldSizeInColumns)
                         ++turns;
-                    else if (Map.Item1[indexY][indexX] == Tile.nType.FREE ||
-                        Map.Item1[indexY][indexX] == Tile.nType.DOT ||
-                        Map.Item1[indexY][indexX] == Tile.nType.POWERDOT)
+                    else if (Map.Item1[indexY][indexX].tile == Tile.nType.FREE ||
+                        Map.Item1[indexY][indexX].tile == Tile.nType.DOT ||
+                        Map.Item1[indexY][indexX].tile == Tile.nType.POWERDOT)
                         turns++;
                 }
             if (turns >= 3)
@@ -342,16 +353,16 @@ namespace PacManUltimate
 
             const int ghostEatBaseScore = 200;
             if (NewDirection1 != Direction.nType.DIRECTION)
-                SetToMove(ref NewDirection1, Entities[0]);
+                SetToMove(ref NewDirection1, ref Entities[0]);
             if (NewDirection2 != Direction.nType.DIRECTION)
-                SetToMove(ref NewDirection2, Entities[1]);
+                SetToMove(ref NewDirection2, ref Entities[1]);
 
             for (int i = 0; i <= FreeGhost; i++)
             {
+                // if statemnt causes each odd turn to be skipped during pacman's excitemnt
+                // causing ghosts to slow down to half of the pacman's speed.
                 if ((i == 0 || (EatEmTimer <= 0 || (EatEmTimer > 0 && munch % 2 == 1))) && !(i == 0 && ticks == 0))
-                {
-                    // if statemnt causes each odd turn to be skipped during pacman's excitemnt
-                    // causing ghosts to slow down to half of the pacman's speed.
+                {                   
                     if ((i > 0 && !Player2) || i > 1)
                     {
                         // if entity is AI, creates new instance with direction selected by AI algorithm.
@@ -365,14 +376,12 @@ namespace PacManUltimate
                                     (
                                     new Tuple<int, int>(Entities[i].Item1, Entities[i].Item2),
                                     Entities[i].Item5.State == DefaultAI.nType.EATEN ?
-                                        TopGhostInTiles : new Tuple<int, int>(Entities[0].Item1, Entities[0].Item2),
-                                    Entities[i].Item4, Map.Item1
-                                    ),
-                                Entities[i].Item5
-                                );
+                                        TopGhostInTiles 
+                                        : new Tuple<int, int>(Entities[0].Item1, Entities[0].Item2), 
+                                    Entities[i].Item4, Map.Item1), Entities[i].Item5);
                     }
-                    CanMove(Entities[i]);
-                    MoveIt(Entities[i]);
+                    CanMove(ref Entities[i]);
+                    MoveIt(ref Entities[i]);
                 }
 
                 // Checks if distance in tiles between pacman and entity is smaller or equal 1.
@@ -403,6 +412,16 @@ namespace PacManUltimate
                         GhostsEaten++;
                         Score += ghostEatBaseScore * GhostsEaten;
                         UpdateHud(Score, ScoreBox);
+                        if(GhostsEaten == 4 && Lives < MaxLives - 1)
+                        {
+                            PacLives[Lives - 1].Visible = true;
+                            ++Lives;
+                            if (Sound)
+                            {
+                                SoundPlayer.URL = SoundPath + "pacman_extrapac.wav";
+                                SoundPlayer.controls.play();
+                            }
+                        }
                         Entities[i].Item5.State = DefaultAI.nType.EATEN;
                     }
                 }
@@ -440,8 +459,8 @@ namespace PacManUltimate
         /// </summary>
         private void UpdateEatPellet()
         {
-            if (MapFresh[Entities[0].Item2][Entities[0].Item1] == Tile.nType.DOT ||
-                MapFresh[Entities[0].Item2][Entities[0].Item1] == Tile.nType.POWERDOT)
+            if (MapFresh[Entities[0].Item2][Entities[0].Item1].tile == Tile.nType.DOT ||
+                MapFresh[Entities[0].Item2][Entities[0].Item1].tile == Tile.nType.POWERDOT)
             {
                 if (Sound)
                 {
@@ -460,7 +479,7 @@ namespace PacManUltimate
                     }
                 }
                 CollectedDots++;
-                if (MapFresh[Entities[0].Item2][Entities[0].Item1] == Tile.nType.DOT)
+                if (MapFresh[Entities[0].Item2][Entities[0].Item1].tile == Tile.nType.DOT)
                     Score += PelletScore;
                 else
                 {
@@ -478,18 +497,11 @@ namespace PacManUltimate
                         Entities[i].Item5.State = DefaultAI.nType.CANBEEATEN;
                 }
 
-                //Delets pellet from the tile by direct replacing of the image
-                //Sometimes the image is still in use when the program needed it to be used again
-                //in such case the assosiated exception is ignored and the action is tried again
-                MapFresh[Entities[0].Item2][Entities[0].Item1] = Tile.nType.FREE;
-                try
-                {
-                    PictureMap[Entities[0].Item2][Entities[0].Item1].Image = Image.FromFile("../Textures/Free.png");
-                }
-                catch (InvalidOperationException)
-                {
-                    PictureMap[Entities[0].Item2][Entities[0].Item1].Image = Image.FromFile("../Textures/Free.png");
-                }
+                //Delets pellet from the tile
+                MapFresh[Entities[0].Item2][Entities[0].Item1].tile = Tile.nType.FREE;
+                MapFresh[Entities[0].Item2][Entities[0].Item1].FreeTile(bg.Graphics, new Point(Entities[0].Item1 * TileSizeInPxs, 
+                                                                                              (Entities[0].Item2 + 3) * TileSizeInPxs), this.BackColor);
+
                 if (Score > HighScore)
                 {
                     HighScore = Score;
@@ -497,6 +509,9 @@ namespace PacManUltimate
                 }
                 UpdateHud(Score, ScoreBox);
             }
+
+            RedrawPellets();
+            Blink();
         }
 
         /// <summary>
@@ -517,7 +532,7 @@ namespace PacManUltimate
         /// <summary>
         /// Body of the update mechanism. Selectivly updates entities and map.
         /// </summary>
-        private new void Update()
+        private void UpdateGame()
         {
             ticks++;
             if ((Level < GhostAccLimLevel && ticks > ghostBaseSpeed - (Level / 2)) || (Level >= GhostAccLimLevel && ticks > ghostMaxSpeed))
@@ -529,7 +544,7 @@ namespace PacManUltimate
                 return;
             }
             UpdateEatEmTimer();
-            UpdateEatPellet();       
+            UpdateEatPellet();    
                  
             //Gives player one extra life at 10000pts
             if (Score >= BonusLifeScore && !extraLifeGiven)
@@ -540,8 +555,8 @@ namespace PacManUltimate
                     SoundPlayer.URL = SoundPath + "pacman_extrapac.wav";
                     SoundPlayer.controls.play();
                 }
-                Lives++;
-                PacLives[Lives - 2].Visible = true;
+                PacLives[Lives - 1].Visible = true;
+                ++Lives;
             }
 
             //Handles successive ghost releasing
@@ -549,6 +564,49 @@ namespace PacManUltimate
                 SetGhostFree(FreeGhost + 1);
             if (GhostRelease > 0 && FreeGhost < 4)
                 GhostRelease --;
+            bg.Render(g);
+        }
+
+        /// <summary>
+        /// Handles periodical blinking of 1up, 2up and Power Pellets.
+        /// </summary>
+        private void Blink()
+        {
+            if (ticks % 3 == 0)
+            {
+                this.up1.Visible = false;
+                if (Player2)
+                    this.up2.Visible = false;
+            }
+            else
+            {
+                this.up1.Visible = true;
+                if (Player2)
+                    this.up2.Visible = true;
+            }
+
+            for (int i = 0; i < Map.Item5.Count; ++i)
+                if (MapFresh[Map.Item5[i].X][Map.Item5[i].Y].tile == Tile.nType.POWERDOT)
+                {
+                    if (ticks % 2 == 0)
+                        MapFresh[Map.Item5[i].X][Map.Item5[i].Y].FreeTile(bg.Graphics, new Point(Map.Item5[i].Y * TileSizeInPxs, 
+                                                                                                (Map.Item5[i].X + 3) * TileSizeInPxs), this.BackColor);
+                    else
+                        MapFresh[Map.Item5[i].X][Map.Item5[i].Y].DrawTile(bg.Graphics, new Point(Map.Item5[i].Y * TileSizeInPxs,
+                                                                                                (Map.Item5[i].X + 3) * TileSizeInPxs), this.BackColor);
+                }
+        }
+
+        /// <summary>
+        /// Handles necessary redrawing of pellets cover by ghosts.
+        /// </summary>
+        private void RedrawPellets()
+        {
+            for (int i = 0; i < RDPSize; i++)
+            {
+                MapFresh[redrawPellets[i].X][redrawPellets[i].Y].DrawTile(
+                    bg.Graphics, new Point(redrawPellets[i].Y * TileSizeInPxs, (redrawPellets[i].X + 3) * TileSizeInPxs), this.BackColor);
+            }
         }
 
         /// <summary>
@@ -589,7 +647,7 @@ namespace PacManUltimate
             }
 
             // Calls main Update function.
-            Update();
+            UpdateGame();
 
             // Function for key countdown.
             KeyCountAndDir(ref NewDirection1, ref keyCountdown1);
@@ -599,15 +657,32 @@ namespace PacManUltimate
             // Checks if the player has already collected all the pellets.
             // In such case in relation to level and game mode, plays another level or ends the game.
             if (CollectedDots >= Map.Item2)
+                EndLevel();
+        }
+
+        /// <summary>
+        /// Handles end game freezing, blinking and calls new level or end game function.
+        /// </summary>
+        private async void EndLevel()
+        {
+            Updater.Stop();
+            for (int i = 0; i < 10; i++)
             {
-                Updater.Stop();
-                Controls.Clear();
-                Level++;
-                if (Level < MaxLevel && !Player2)
-                    PlayGame(false);
+                if (i % 2 == 0)
+                    RenderMap(MapFresh, Color.White);
                 else
-                    EndGame();
+                    RenderMap(MapFresh, MapColor);
+
+                bg.Render(g);
+                await Task.Delay(500);
             }
+
+            Controls.Clear();
+            Level++;
+            if (Level < MaxLevel && !Player2)
+                PlayGame(false);
+            else
+                EndGame();
         }
 
         /// <summary>

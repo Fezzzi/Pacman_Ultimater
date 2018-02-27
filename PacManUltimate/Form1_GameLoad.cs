@@ -1,14 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Threading;
-using System.Windows.Input;
+using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace PacManUltimate
 {
@@ -17,12 +12,18 @@ namespace PacManUltimate
         #region - VARIABLES Block -
 
         int Lives, Level;
-        Tuple<Tile.nType?[][], int, Tuple<int, int>> Map;
+        Tuple<Tile[][], int, Tuple<int, int>, Color, List<Point>> Map;
         Tuple<int, int, PictureBox, Direction.nType, DefaultAI>[] Entities;
         DefaultAI[] DefaultAIs;
         Tuple<int, int> TopGhostInTiles;
         PictureBox[] PacLives;
+        Graphics g;
+        BufferedGraphics bg;
+        Size defSize;
+        Label up1, up2;
+        Color MapColor;
 
+        const int MaxLives = 6;
         const int FieldSizeInRows = 31;
         const int FieldSizeInColumns = 28;
         const int TileSizeInPxs = 16;
@@ -35,44 +36,38 @@ namespace PacManUltimate
 
         #region - STARTGAME Block -
 
-        private PictureBox[][] RenderMap(Tile.nType?[][] tiles)
+        /// <summary>
+        /// Function that handles loading, setting and placing of all the map tiles in game control.
+        /// </summary>
+        /// <param name="tiles"></param>
+        /// <returns></returns>
+        private void RenderMap(Tile[][] tiles, Color color)
         {
-            //Function that handles loading, setting and placing of all the map tiles in game control
-            PictureBox[][] pictureMap = new PictureBox[FieldSizeInRows][];
+            g.Clear(this.BackColor);
+            BufferedGraphicsContext bgc = BufferedGraphicsManager.Current;
+            bg = bgc.Allocate(g, this.DisplayRectangle);
+
+            if (color == Color.Transparent)
+                color = ChooseRandomColor();
+
+            MapColor = color;
             for (int i = 0; i < FieldSizeInRows; i++)
-            {
-                pictureMap[i] = new PictureBox[FieldSizeInColumns];
                 for (int j = 0; j < FieldSizeInColumns; j++)
                 {
-                    PictureBox pic = new PictureBox();
-                    PlacePictureBox
-                        (
-                            pic,
-                            Image.FromFile("../textures/" + tiles[i][j].ToString() + ".png"),
-                            new Point((j * TileSizeInPxs), ((i + 3) * TileSizeInPxs)),
-                            new Size(TileSizeInPxs, TileSizeInPxs)
-                        );
-                    pictureMap[i][j] = pic;
+                    tiles[i][j].DrawTile(bg.Graphics, new Point(j * TileSizeInPxs, (i + 3) * TileSizeInPxs), color);
                 }
-            }
-            PlacePictureBox(new PictureBox(), Image.FromFile("../textures/FREE.png"),
-                            new Point(FieldSizeInColumns * TileSizeInPxs, 0),
-                            new Size(TileSizeInPxs, TileSizeInPxs));
-            return pictureMap;
         }
 
-        private void DeepCopy(Tile.nType?[][] source, ref Tile.nType?[][] destination)
+        private void DeepCopy(Tile[][] source, ref Tile[][] destination)
         {
             //Creates deep copy of map array so the game can modify actual map but does not lose
             //information about original map 
-            destination = new Tile.nType?[source.Count()][];
+            destination = new Tile[source.Count()][];
             for (int i = 0; i < source.Count(); i++)
             {
-                destination[i] = new Tile.nType?[source[i].Count()];
+                destination[i] = new Tile[source[i].Count()];
                 for (int j = 0; j < source[i].Count(); j++)
-                {
-                    destination[i][j] = source[i][j];
-                }
+                    destination[i][j] = new Tile(source[i][j].tile);
             }
         }
 
@@ -106,19 +101,19 @@ namespace PacManUltimate
             //  - Type of entity such as Player1, Player2, or all the kinds of enemy AI
             DefaultAIs = new DefaultAI[4]
             {
-                new DefaultAI(DefaultAI.nType.HOSTILEATTACK),
-                new DefaultAI(DefaultAI.nType.HOSTILEATTACK),
-                new DefaultAI(DefaultAI.nType.HOSTILEATTACK),
-                new DefaultAI(DefaultAI.nType.HOSTILEATTACK)
+                new DefaultAI(DefaultAI.nType.HOSTILEATTACK, FieldSizeInColumns, FieldSizeInRows),
+                new DefaultAI(DefaultAI.nType.HOSTILEATTACK, FieldSizeInColumns, FieldSizeInRows),
+                new DefaultAI(DefaultAI.nType.HOSTILEATTACK, FieldSizeInColumns, FieldSizeInRows),
+                new DefaultAI(DefaultAI.nType.HOSTILEATTACK, FieldSizeInColumns, FieldSizeInRows)
             };
 
             Entities = new Tuple<int, int, PictureBox, Direction.nType, DefaultAI>[5]
                 {
                     new Tuple<int, int, PictureBox, Direction.nType, DefaultAI>
-                        (pacmanInitialX, pacmanInitialY, new PictureBox(),Direction.nType.LEFT, new DefaultAI(DefaultAI.nType.PLAYER1)),
+                        (pacmanInitialX, pacmanInitialY, new PictureBox(),Direction.nType.LEFT, new DefaultAI(DefaultAI.nType.PLAYER1, FieldSizeInColumns, FieldSizeInRows)),
                     new Tuple<int, int, PictureBox, Direction.nType, DefaultAI>
                         (TopGhostInTiles.Item1, TopGhostInTiles.Item2, new PictureBox(),
-                        Direction.nType.LEFT, Player2 ? new DefaultAI(DefaultAI.nType.PLAYER2) : DefaultAIs[0]),
+                        Direction.nType.LEFT, Player2 ? new DefaultAI(DefaultAI.nType.PLAYER2, FieldSizeInColumns, FieldSizeInRows) : DefaultAIs[0]),
                     new Tuple<int, int, PictureBox, Direction.nType, DefaultAI>
                         (TopGhostInTiles.Item1 - 2, TopGhostInTiles.Item2 + 3,
                         new PictureBox(),Direction.nType.DIRECTION, DefaultAIs[1]),
@@ -131,23 +126,27 @@ namespace PacManUltimate
                 };
 
             //Setting entities names for easy later manipulation and automatic image selection
-            const int EntityCount = 6;
-            for (int i = 1; i < EntityCount; i++)
+            const int EntityCount = 5;
+            for (int i = 1; i <= EntityCount; i++)
                 Entities[i - 1].Item3.Name = "Entity" + i.ToString();
 
             // Physical placing of the entities's images on the map and preseting  their starting images.
             // All those magic numbers are X and Y axis correction for entities' pictures to be correctly placed.
             PlacePictureBox(Entities[0].Item3,
-                Image.FromFile("../Textures/PacStart.png"),
-                new Point(Entities[0].Item1 * TileSizeInPxs + 4, Entities[0].Item2 * TileSizeInPxs + 42), new Size(EntitiesSizeInPxs, EntitiesSizeInPxs));
-            PlacePictureBox(Entities[1].Item3,
-                Image.FromFile("../Textures/Entity2Left.png"),
-                new Point(Entities[1].Item1 * TileSizeInPxs - 13, Entities[1].Item2 * TileSizeInPxs + 42), new Size(EntitiesSizeInPxs, EntitiesSizeInPxs));
+                            Image.FromFile("../Textures/PacStart.png"),
+                            new Point(Entities[0].Item1 * TileSizeInPxs + 3, Entities[0].Item2 * TileSizeInPxs + 42),
+                            new Size(EntitiesSizeInPxs, EntitiesSizeInPxs));
 
-            for (int i = 2; i < EntityCount - 1; i++)
+            PlacePictureBox(Entities[1].Item3,
+                            Image.FromFile("../Textures/Entity2Left.png"),
+                            new Point(Entities[1].Item1 * TileSizeInPxs + 3, Entities[1].Item2 * TileSizeInPxs + 42), 
+                            new Size(EntitiesSizeInPxs, EntitiesSizeInPxs));
+
+            for (int i = 2; i < EntityCount; i++)
                 PlacePictureBox(Entities[i].Item3,
-                    Image.FromFile("../Textures/Entity" + (i + 1).ToString() + (i % 2 == 0 ? "Up.png" : "Down.png")),
-                    new Point(Entities[i].Item1 * TileSizeInPxs - 13, Entities[i].Item2 * TileSizeInPxs + 42), new Size(EntitiesSizeInPxs, EntitiesSizeInPxs));
+                                Image.FromFile("../Textures/Entity" + (i + 1).ToString() + (i % 2 == 0 ? "Up.png" : "Down.png")),
+                                new Point(Entities[i].Item1 * TileSizeInPxs + 3, Entities[i].Item2 * TileSizeInPxs + 42), 
+                                new Size(EntitiesSizeInPxs, EntitiesSizeInPxs));
         }
 
         private void LoadHud(int hp)
@@ -156,7 +155,8 @@ namespace PacManUltimate
             const int heartSizeInPx = 32;
             int lives = 0;
 
-            PlaceLabel(new Label(), "1UP", Color.White,
+            up1 = new Label();
+            PlaceLabel(up1, "1UP", Color.White,
                 new Point(3 * TileSizeInPxs, 0), new Font("Arial", 13, FontStyle.Bold));
             PlaceLabel(ScoreBox, Score > 0 ? Score.ToString() : "00", Color.White,
                 new Point(4 * TileSizeInPxs, 20), new Font("Arial", 13, FontStyle.Bold));
@@ -170,29 +170,34 @@ namespace PacManUltimate
             }
             else
             {
-                PlaceLabel(new Label(), "2UP", Color.White,
+                up2 = new Label();
+                PlaceLabel(up2, "2UP", Color.White,
                     new Point(22 * TileSizeInPxs, 0), new Font("Arial", 13, FontStyle.Bold));
                 PlaceLabel(Score2Box, Score2 > 0 ? Score2.ToString() : "00", Color.White,
                     new Point(23 * TileSizeInPxs, 20), new Font("Arial", 13, FontStyle.Bold));
             }
-            //Places all three lives on their supposed place
+            // Places all lives on their supposed place.
             foreach (var item in PacLives)
             {
                 item.Image = Image.FromFile("../textures/Life.png");
-                item.Location = new Point((1 + lives) * heartSizeInPx, 34 * TileSizeInPxs);
+                item.Location = new Point(lives * heartSizeInPx + TileSizeInPxs, ((FieldSizeInRows + 3) * TileSizeInPxs) + 4);
                 item.Size = new Size(heartSizeInPx, heartSizeInPx);
                 this.Controls.Add(item);
                 lives++;
             }
-            //Sets visibility of lives depending on number of player's lives
-            for (int i = 2; i > hp - 2 && i >= 0; i--)
+            // Sets visibility of lives depending on number of player's lives.
+            for (int i = MaxLives - 1; i > hp && i >= 0; i--)
                 PacLives[i].Visible = false;
         }
 
-        private void LoadingAndInit(Label loading, Label levelLabel)
+        private void LoadingAndInit(Label loading, Label levelLabel, Color color)
         {
             if (Level == 0)
             {
+                defSize = this.Size;
+                this.AutoSize = false;
+                this.Size = new Size((FieldSizeInColumns + 1) * TileSizeInPxs, (FieldSizeInRows + 8) * TileSizeInPxs);
+                g = this.CreateGraphics();
                 extraLifeGiven = false; //has the player received extra life at 10000pts?
                 Score = 0; //p1 score
                 Score2 = 0; //p2 score
@@ -226,43 +231,65 @@ namespace PacManUltimate
             FreeGhost = 1; //number of active ghosts moving through the map
             GhostRelease = Player2 ? 130 / 3 : (260 - Level) / 3; //timer for ghost releasing - decreasing with level
             EatEmTimer = 0; //timer for pacman's excitement
-            PacLives = new PictureBox[3]{
-                    new PictureBox(),new PictureBox(), new PictureBox()};
+            PacLives = new PictureBox[MaxLives];
+            for (int i = 0; i < MaxLives; i++)
+                PacLives[i] = new PictureBox();
 
             if (HighScore == -1)
             {
                 HighScoreClass hscr = new HighScoreClass();
                 HighScore = hscr.LoadHighScore();
             }
-            LoadHud(Lives);
+
+            LoadHud(Lives - 2);
         }
 
-        private void PlayGame(bool restart)
+        private Color ChooseRandomColor()
+        {
+            Random rndm = new Random();
+            switch (rndm.Next(1, 6))
+            {
+                case 1:
+                    return Color.FromArgb(0, 255, rndm.Next(0, 255));
+                case 2:
+                    return Color.FromArgb(0, rndm.Next(0, 255), 0);
+                case 3:
+                    return Color.FromArgb(255, 0, rndm.Next(0, 255));
+                case 4:
+                    return Color.FromArgb(255, rndm.Next(0, 255), 0);
+                case 5:
+                    return Color.FromArgb(rndm.Next(0, 255), 0, 255);
+                default:
+                    return Color.FromArgb(rndm.Next(0, 255), 255, 0);
+            }
+        }
+
+        private async void PlayGame(bool restart)
         {
             //provides loading and general preparing of the game at the level start-up
             Label loading = new Label();
             Label levelLabel = new Label();
-            LoadingAndInit(loading, levelLabel);
+            LoadingAndInit(loading, levelLabel, Map.Item4);
 
             if (Music)
             {
                 MusicPlayer.SoundLocation = "../sounds/pacman_intermission.wav";
                 MusicPlayer.PlayLooping();
             }
-            //gets the position of the first ghost located on the top of a ghost house
-            TopGhostInTiles = new Tuple<int, int>(Map.Item3.Item1, Map.Item3.Item2 - 1);
+            // Gets the position of the first ghost located on the top of a ghost house.
+            TopGhostInTiles = new Tuple<int, int>(Map.Item3.Item1 - 1, Map.Item3.Item2 - 1);
             LoadEntities();
-            //places ready label displayed at the beginning of each game
+            // Places ready label displayed at the beginning of each game.
             Label ready = new Label();
             PlaceLabel(ready, "READY!", Color.Yellow, new Point(11 * TileSizeInPxs - 8, 20 * TileSizeInPxs - 6), new Font("Ravie", 14, FontStyle.Bold));
 
-            //nulls pellets and actual map in case of new level laod
+            // Nulls pellets and actual map in case of new level laod.
             if (!restart)
             {
                 CollectedDots = 0;
                 DeepCopy(Map.Item1, ref MapFresh);
             }
-            PictureMap = RenderMap(MapFresh);
+            RenderMap(MapFresh, Map.Item4);
 
             loading.Visible = false;
             levelLabel.Visible = false;
@@ -272,19 +299,26 @@ namespace PacManUltimate
                 MusicPlayer.SoundLocation = "../sounds/pacman_beginning.wav";
                 MusicPlayer.Play();
             }
-            System.Threading.Thread.Sleep(OpeningThemeLength);
-            ready.Dispose();
-            Refresh();
-            //corects start positions of pacman and first ghost as they were located between the tiles at first
-            Entities[0].Item3.Location = new Point(Entities[0].Item3.Location.X - 10, Entities[0].Item3.Location.Y);
-            Entities[1].Item3.Location = new Point(Entities[1].Item3.Location.X + 6, Entities[1].Item3.Location.Y);
-            if (Music)
+            bg.Render(g);
+
+            await Task.Delay(OpeningThemeLength);
+
+            // It's possible that the player has pressed escape during the opening theme.
+            if (gameOn)
             {
-                MusicPlayer.SoundLocation = "../sounds/pacman_siren.wav";
-                MusicPlayer.PlayLooping();
+                ready.Dispose();
+                Update();
+                // Corects start positions of pacman and first ghost as they were located between the tiles at first.
+                Entities[0].Item3.Location = new Point(Entities[0].Item3.Location.X - 9, Entities[0].Item3.Location.Y);
+                Entities[1].Item3.Location = new Point(Entities[1].Item3.Location.X - 9, Entities[1].Item3.Location.Y);
+                if (Music)
+                {
+                    MusicPlayer.SoundLocation = "../sounds/pacman_siren.wav";
+                    MusicPlayer.PlayLooping();
+                }
+                // Starts updater that provides effect of main game cycle.
+                Updater.Start();
             }
-            //starts updater that provides effect of main game cycle
-            Updater.Start();
         }
 
         private void MakeItHappen(LoadMap loadMap)

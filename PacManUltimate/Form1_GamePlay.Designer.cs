@@ -137,7 +137,7 @@
             this.OrgGame.AutoSize = true;
             this.OrgGame.Font = new System.Drawing.Font("Microsoft Sans Serif", 21F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
             this.OrgGame.ForeColor = System.Drawing.Color.White;
-            this.OrgGame.Location = new System.Drawing.Point(94, 51);
+            this.OrgGame.Location = new System.Drawing.Point(95, 51);
             this.OrgGame.Name = "OrgGame";
             this.OrgGame.Size = new System.Drawing.Size(241, 41);
             this.OrgGame.TabIndex = 9;
@@ -474,6 +474,7 @@
             {
                 this.Load += new System.EventHandler(this.PacManUltimate_Load);
                 this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.PacManUltimate_KeyDown);
+                this.Resize += new System.EventHandler(this.CheckMinimization);
             }
             this.ResumeLayout(false);
             this.PerformLayout();

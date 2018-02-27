@@ -24,6 +24,7 @@ namespace PacManUltimate
         mn menuLayer;
         Label ScoreBox = new Label(), HighScoreBox = new Label(), Score2Box = new Label();
         List<char> symbols = new List<char>();
+        bool wasMinimized;
 
         #endregion
 
@@ -57,6 +58,17 @@ namespace PacManUltimate
                 MenuKeyDownHandler(e);
             else
                 GameKeyDownHandler(e);
+        }
+
+        private void CheckMinimization(object sender, EventArgs e)
+        {
+            if (this.WindowState == FormWindowState.Minimized)
+                wasMinimized = true;
+            else if (wasMinimized && gameOn)
+                bg.Render(g);
+            else
+                wasMinimized = false;
+
         }
 
         #endregion

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace PacManUltimate
 {
     /// <summary>
-    /// Class providing methods for AI movement and enumeration for easy programmicaly recognition of entities.
+    /// Class providing methods for AI movement and enumerable for easy programmicaly recognition of entities.
     /// </summary>
     class DefaultAI
     {
@@ -20,14 +20,17 @@ namespace PacManUltimate
         //      2.4) CanBeEaten - entity can be eaten by pacman
 
         public nType State;
+        private int fieldSizeInColumns, fieldSizeInRows;
 
-        public DefaultAI(nType state)
+        public DefaultAI(nType state, int tsc, int tsr)
         {
             State = state;
+            fieldSizeInColumns = tsc;
+            fieldSizeInRows = tsr;
         }
 
         /// <summary>
-        /// Enumeration that characterizes all the possible entity's states.
+        /// Enumerable that characterizes all the possible entity's states.
         /// </summary>
         public enum nType
         {
@@ -42,7 +45,7 @@ namespace PacManUltimate
         /// <param name="direction">The entity's curent direction.</param>
         /// <returns>Returns chosen direction for the entity.</returns>
         public Direction.nType NextStep
-            (Tuple<int,int> position, Tuple<int,int> target, Direction.nType direction, Tile.nType?[][] map)
+            (Tuple<int,int> position, Tuple<int,int> target, Direction.nType direction, Tile[][] map)
         {
             //Calls function to return AI's next direction
             if (State == nType.HOSTILERETREAT)
@@ -62,7 +65,7 @@ namespace PacManUltimate
         /// <param name="target">Target tile (Usually pacman's location).</param>
         /// <param name="direction">The entity's curent direction.</param>
         /// <returns>Returns chosen direction for the entity.</returns>
-        virtual public Direction.nType HostileAttack(Tuple<int, int> position, Tuple<int, int> target, Direction.nType direction, Tile.nType?[][] map)
+        virtual public Direction.nType HostileAttack(Tuple<int, int> position, Tuple<int, int> target, Direction.nType direction, Tile[][] map)
         {
             return RandomAI(position, direction, map);
         }
@@ -74,7 +77,7 @@ namespace PacManUltimate
         /// <param name="target">Target tile (Usually some corner tile).</param>
         /// <param name="direction">The entity's curent direction.</param>
         /// <returns>Returns chosen direction for the entity.</returns>
-        virtual public Direction.nType HostileRetreat(Tuple<int, int> position, Tuple<int, int> target, Direction.nType direction, Tile.nType?[][] map)
+        virtual public Direction.nType HostileRetreat(Tuple<int, int> position, Tuple<int, int> target, Direction.nType direction, Tile[][] map)
         {
             return RandomAI(position, direction, map);
         }
@@ -86,7 +89,7 @@ namespace PacManUltimate
         /// <param name="target">Target tile (Usuallyghost house entrance tile).</param>
         /// <param name="direction">The entity's curent direction.</param>
         /// <returns>Returns chosen direction for the entity.</returns>
-        virtual public Direction.nType Eaten(Tuple<int, int> position, Tuple<int, int> target, Direction.nType direction, Tile.nType?[][] map)
+        virtual public Direction.nType Eaten(Tuple<int, int> position, Tuple<int, int> target, Direction.nType direction, Tile[][] map)
         {
             return RandomAI(position, direction, map);
         }
@@ -98,7 +101,7 @@ namespace PacManUltimate
         /// <param name="target">Target tile.</param>
         /// <param name="direction">The entity's curent direction.</param>
         /// <returns>Returns chosen direction for the entity.</returns>
-        virtual public Direction.nType CanBeEaten(Tuple<int, int> position, Tuple<int, int> target, Direction.nType direction, Tile.nType?[][] map)
+        virtual public Direction.nType CanBeEaten(Tuple<int, int> position, Tuple<int, int> target, Direction.nType direction, Tile[][] map)
         {
             return RandomAI(position, direction, map);
         }
@@ -110,7 +113,7 @@ namespace PacManUltimate
         /// <param name="position">The entity's position.</param>
         /// <param name="direction">The entity's curent direction.</param>
         /// <returns>Returns chosen direction for the entity.</returns>
-        public Direction.nType RandomAI(Tuple<int, int> position, Direction.nType direction, Tile.nType?[][] map)
+        public Direction.nType RandomAI(Tuple<int, int> position, Direction.nType direction, Tile[][] map)
         {
             Random rnmd = new Random();
             List<Tuple<int, int>> possibilities = new List<Tuple<int, int>>();
@@ -122,9 +125,14 @@ namespace PacManUltimate
             {
                 for (int i = -1; i < 2; i += 2)
                 {
-                    if (CanAdd(map[position.Item2 + (j == 0 ? i : 0)][position.Item1 + (j == 1 ? i : 0)])
-                        && ((j == 0 ? i : 0) != back.Item1 || (j == 1 ? i : 0) != back.Item2))
-                        possibilities.Add(new Tuple<int, int>((j == 0 ? i : 0), (j == 1 ? i : 0)));
+                    int deltaX = (j == 0 ? i : 0);
+                    int deltaY = (j == 1 ? i : 0);
+                    if(position.Item1 + deltaY < 0 || position.Item1 + deltaY >= fieldSizeInColumns
+                       || position.Item2 + deltaX < 0 || position.Item2 + deltaX >= fieldSizeInRows)
+                            possibilities.Add(new Tuple<int, int>(deltaX, deltaY));
+                    else if (CanAdd(map[position.Item2 + deltaX][position.Item1 + deltaY])
+                             && (deltaX != back.Item1 || deltaY != back.Item2))
+                                possibilities.Add(new Tuple<int, int>(deltaX, deltaY));
                 }
             }
 
@@ -141,10 +149,9 @@ namespace PacManUltimate
         /// </summary>
         /// <param name="tile">The examined tile.</param>
         /// <returns>Boolean indicating occupancy of the examined tile.</returns>
-        public bool CanAdd(Tile.nType? tile)
+        public bool CanAdd(Tile tile)
         {
-            //
-            if (tile == Tile.nType.DOT || tile == Tile.nType.POWERDOT || tile == Tile.nType.FREE)
+            if (tile.tile == Tile.nType.DOT || tile.tile == Tile.nType.POWERDOT || tile.tile == Tile.nType.FREE)
                 return true;
             else
                 return false;

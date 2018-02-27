@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PacManUltimate
 {
@@ -19,7 +16,7 @@ namespace PacManUltimate
         const int PacManInitialY = 23;
         const int PacManInitialX = 13;
 
-        public Tuple<Tile.nType?[][], int, Tuple<int,int>> Map;
+        public Tuple<Tile[][], int, Tuple<int,int>, System.Drawing.Color, List<System.Drawing.Point>> Map;
 
         /// <summary>
         /// Calls loading function with default symbols.
@@ -46,16 +43,17 @@ namespace PacManUltimate
         /// <param name="path">Path to the map file that is to be loaded.</param>
         /// <param name="symbols">Set of 5 symbols representing tile types in to be loaded file.</param>
         /// <returns>Return array of loaded tiles, translated to game's language (null in case of failure).</returns>
-        private Tuple<Tile.nType?[][], int, Tuple<int, int>> LdMap(string path, char[] symbols)
+        private Tuple<Tile[][], int, Tuple<int, int>,System.Drawing.Color, List<System.Drawing.Point>> LdMap(string path, char[] symbols)
         {
-            Tuple<char[][],Tile.nType?[][],int> map = LoadIt(path,symbols);
+            Tuple<char[][],Tile[][],int, System.Drawing.Color, List<System.Drawing.Point>> map = LoadIt(path,symbols);
             
             if (map != null)
             {
                 // if LoadIt ended successfully preforms test of map's playability.
                 Tuple<bool, Tuple<int, int>> playable = IsPlayable(map.Item1, symbols, map.Item3);
                 if (playable.Item1)
-                    return new Tuple<Tile.nType?[][],int,Tuple<int,int>>(map.Item2,map.Item3,playable.Item2);
+                    return new Tuple<Tile[][], int, Tuple<int, int>, System.Drawing.Color, List<System.Drawing.Point>>
+                        (map.Item2, map.Item3, playable.Item2, map.Item4, map.Item5);
             }
             // In case map is playable final Tuple is created and returned.
             // Null is returned to signalise something went wrong otherwise.
@@ -68,18 +66,23 @@ namespace PacManUltimate
         /// <param name="path">Path to the map file that is to be loaded.</param>
         /// <param name="symbols">Set of 5 symbols representing tile types in to be loaded file.</param>
         /// <returns>Returns Tile map if possible, null otherwise.</returns>
-        private Tuple<char[][],Tile.nType?[][],int> LoadIt(string path,char[] symbols)
+        private Tuple<char[][],Tile[][],int, System.Drawing.Color, List<System.Drawing.Point>> LoadIt(string path,char[] symbols)
         {
             // Map is created bigger so it is possible to automaticaly call transform to tiles with indexes
             // out of range of map without causing IndexOutOfRange Exception.
             int numOfDots = 0;
             char[][] map = new char[MapHeightInTiles + 2][];
-            Tile.nType?[][] tileMap = new Tile.nType?[MapHeightInTiles][];
+            Tile[][] tileMap = new Tile[MapHeightInTiles][];
+            var pPArr = new List<System.Drawing.Point>();
             int lineNum = 1,column = 0;
             StreamReader sr = new StreamReader(path);
             map[0] = new char[MapWidthInTiles + 2];
             map[1] = new char[MapWidthInTiles + 2];
-            tileMap[0] = new Tile.nType?[MapWidthInTiles];
+            tileMap[0] = new Tile[MapWidthInTiles];
+
+            // Reads first line and performs parsing on it to get game map color specified on the first line.
+            string firstLine = sr.ReadLine();
+            System.Drawing.Color? color = ParseColor(firstLine);
 
             // Reads whole text file symbol by symbol and saves it in Map array.
             while (!sr.EndOfStream)
@@ -110,9 +113,14 @@ namespace PacManUltimate
                         lineNum > 2 ? tileMap[lineNum - 3][column - 1] : null, 
                         column > 1 ? tileMap[lineNum - 2][column - 2] : null, symbols
                         );
+
                     //Quits whole reading in case the program was unable to identify tile
                     if (tileMap[lineNum - 2][column - 1] == null)
                         return null;
+
+                    if (tileMap[lineNum - 2][column - 1].tile == Tile.nType.POWERDOT)
+                        pPArr.Add(new System.Drawing.Point(lineNum - 2, column - 1));
+
                 }
                 if (column == 28 && !sr.EndOfStream)
                 {
@@ -122,7 +130,7 @@ namespace PacManUltimate
                     lineNum++;
                     map[lineNum] = new char[MapWidthInTiles + 2];
                     if (lineNum < MapHeightInTiles + 1)
-                        tileMap[lineNum - 1] = new Tile.nType?[MapWidthInTiles];
+                        tileMap[lineNum - 1] = new Tile[MapWidthInTiles];
                     else return null;
                 }           
             }
@@ -142,7 +150,55 @@ namespace PacManUltimate
                         );
                 }
             }
-            return new Tuple<char[][],Tile.nType?[][],int>(map,tileMap,numOfDots);
+            return new Tuple<char[][],Tile[][],int,System.Drawing.Color,List<System.Drawing.Point>>
+                (map,tileMap,numOfDots,color == null ? System.Drawing.Color.Transparent : (System.Drawing.Color)color, pPArr);
+        }
+
+        /// <summary>
+        /// Parses first line of the map text representation file to get color
+        /// in which is game field to be displayed.
+        /// </summary>
+        /// <param name="line">Readed first line of the file.</param>
+        /// <returns>Color in which is game field to be displayed.</returns>
+        private System.Drawing.Color? ParseColor(string line)
+        {
+            string[] lineWords = line.Split(new char[] { ':', ' ','#' }, StringSplitOptions.RemoveEmptyEntries);
+            if (lineWords[0] == "RANDOM")
+                return System.Drawing.Color.Transparent;
+            string color = lineWords.Length == 2 ? lineWords[1] : null;
+
+            if (color.Length == 6)
+                try
+                {
+                    int[] hexRepre = new int[3]
+                    {
+                    Convert.ToInt32(color.Substring(0, 2)),
+                    Convert.ToInt32(color.Substring(2, 2)),
+                    Convert.ToInt32(color.Substring(4, 2))
+                    };
+                    return System.Drawing.Color.FromArgb(hexRepre[0], hexRepre[1], hexRepre[2]);
+                }
+                catch (FormatException)
+                {
+                    return null;
+                }
+            else if (color.Length == 8)
+                try
+                {
+                    int[] hexRepre = new int[4]
+                    {
+                    Convert.ToInt32(color.Substring(0, 2)),
+                    Convert.ToInt32(color.Substring(2, 2)),
+                    Convert.ToInt32(color.Substring(4, 2)),
+                    Convert.ToInt32(color.Substring(6, 2))
+                    };
+                    return System.Drawing.Color.FromArgb(hexRepre[0], hexRepre[1], hexRepre[2], hexRepre[3]);
+                }
+                catch (FormatException)
+                {
+                    return null;
+                }
+            else return null;
         }
 
         /// <summary>
@@ -262,21 +318,20 @@ namespace PacManUltimate
         /// <param name="leftTile">Allready translated tile to the left.</param>
         /// <param name="symbols">Set of 5 symbols representing tile types in to be loaded file.</param>
         /// <returns>Returns input symbol translated to the program's tile alphabet.</returns>
-        private Tile.nType? TransformToTile
+        private Tile TransformToTile
             (
             char tile, char tileLeft, char tileRight,
             char tileUp, char tileDown, char BLCorner,
             char TLCorner,char TRCorner, char BRCorner,
-            Tile.nType? upperTile, Tile.nType? leftTile, 
+            Tile upperTile, Tile leftTile, 
             char[] symbols)
         {
-            Tile tl = new Tile();
             if (tile == symbols[0])
-                return tl.ReturnType(" ");
+                return new Tile(" ");
             else if (tile == symbols[1])
-                return tl.ReturnType(".");
+                return new Tile(".");
             else if (tile == symbols[2])
-                return tl.ReturnType("o");
+                return new Tile("o");
             else if (tile == symbols[3])
             {
                 // Determines type of wall with use of adjacent symbols and tiles.
@@ -284,13 +339,13 @@ namespace PacManUltimate
                     tileUp == symbols[3] && tileDown == symbols[3])
                 {
                     if (TLCorner == symbols[0] || TLCorner == symbols[1] || TLCorner == symbols[2])
-                        return tl.ReturnType("SCBR");
+                        return new Tile("SCBR");
                     else if (TRCorner == symbols[0] || TRCorner == symbols[1] || TRCorner == symbols[2])
-                        return tl.ReturnType("SCBL");
+                        return new Tile("SCBL");
                     else if (BRCorner == symbols[0] || BRCorner == symbols[1] || BRCorner == symbols[2])
-                        return tl.ReturnType("SCTL");
+                        return new Tile("SCTL");
                     else if (BLCorner == symbols[0] || BLCorner == symbols[1] || BLCorner == symbols[2])
-                        return tl.ReturnType("SCTR");
+                        return new Tile("SCTR");
                     else return null;
                 }
                 else if ((tileLeft == symbols[3] || tileLeft == symbols[4]) &&
@@ -298,76 +353,76 @@ namespace PacManUltimate
                     (tileUp != symbols[3] || tileDown != symbols[3]) || (tileRight == '\0' && tileUp != symbols[3] && tileDown != symbols[3]))
                 {
                     if (tileUp == symbols[3])
-                        return tl.ReturnType("SWB");
+                        return new Tile("SWB");
                     else if (tileDown == symbols[3])
-                        return tl.ReturnType("SWT");
-                    else if (tileUp == symbols[1] || tileUp == symbols[2] || leftTile == Tile.nType.BWALLDOUBLE || leftTile == Tile.nType.TLCURVESINGLE)
-                        return tl.ReturnType("DWB");
-                    else if (tileDown == symbols[1] || tileDown == symbols[2] || leftTile == Tile.nType.TWALLDOUBLE || leftTile == Tile.nType.BLCURVESINGLE)
-                        return tl.ReturnType("DWT");
+                        return new Tile("SWT");
+                    else if (tileUp == symbols[1] || tileUp == symbols[2] || leftTile.tile == Tile.nType.BWALLDOUBLE || leftTile.tile == Tile.nType.TLCURVESINGLE)
+                        return new Tile("DWB");
+                    else if (tileDown == symbols[1] || tileDown == symbols[2] || leftTile.tile == Tile.nType.TWALLDOUBLE || leftTile.tile == Tile.nType.BLCURVESINGLE)
+                        return new Tile("DWT");
                     else if (tileUp == symbols[0])
-                        return tl.ReturnType("DWB");
+                        return new Tile("DWB");
                     else if (tileDown == symbols[0])
-                        return tl.ReturnType("DWT");
+                        return new Tile("DWT");
                     else return null;
                 }
                 else if (tileUp == symbols[3] && tileDown == symbols[3])
                 {
                     if (tileRight == symbols[3])
-                        return tl.ReturnType("SWL");
+                        return new Tile("SWL");
                     else if (tileLeft == symbols[3])
-                        return tl.ReturnType("SWR");
+                        return new Tile("SWR");
                     else if (tileRight == symbols[1] || tileRight == symbols[2])
-                        return tl.ReturnType("DWL");
+                        return new Tile("DWL");
                     else if (tileLeft == symbols[1] || tileLeft == symbols[2])
-                        return tl.ReturnType("DWR");
-                    else if (tileLeft == symbols[0] && (upperTile == Tile.nType.LWALLDOUBLE || upperTile == Tile.nType.TRCURVESINGLE))
-                        return tl.ReturnType("DWL");
-                    else if (tileRight == symbols[0] && (upperTile == Tile.nType.RWALLDOUBLE || upperTile == Tile.nType.TLCURVESINGLE))
-                        return tl.ReturnType("DWR");
+                        return new Tile("DWR");
+                    else if (tileLeft == symbols[0] && (upperTile.tile == Tile.nType.LWALLDOUBLE || upperTile.tile == Tile.nType.TRCURVESINGLE))
+                        return new Tile("DWL");
+                    else if (tileRight == symbols[0] && (upperTile.tile == Tile.nType.RWALLDOUBLE || upperTile.tile == Tile.nType.TLCURVESINGLE))
+                        return new Tile("DWR");
                     else return null;
                 }
                 else if (tileUp == symbols[3] && tileLeft == symbols[3])
                 {
                     if (TLCorner == symbols[3] || TLCorner == symbols[0])
-                        return tl.ReturnType("SCBR");
+                        return new Tile("SCBR");
                     else if (TLCorner == symbols[1] || TLCorner == symbols[2])
-                        return tl.ReturnType("DCBR");
+                        return new Tile("DCBR");
                     else return null;
                 }
                 else if (tileRight == symbols[3] && tileDown == symbols[3])
                 {
                     if (BRCorner == symbols[3] || BRCorner == symbols[0])
-                        return tl.ReturnType("SCTL");
+                        return new Tile("SCTL");
                     else if (BRCorner == symbols[1] || BRCorner == symbols[2])
-                        return tl.ReturnType("DCTL");
+                        return new Tile("DCTL");
                     else return null;
                 }
                 else if (tileUp == symbols[3] && tileRight == symbols[3])
                 {
                     if (TRCorner == symbols[3] || TRCorner == symbols[0])
-                        return tl.ReturnType("SCBL");
+                        return new Tile("SCBL");
                     else if (TRCorner == symbols[1] || TRCorner == symbols[2])
-                        return tl.ReturnType("DCBL");
+                        return new Tile("DCBL");
                     else return null;
                 }
                 else if (tileLeft == symbols[3] && tileDown == symbols[3])
                 {
                     if (BLCorner == symbols[3] || BLCorner == symbols[0])
-                        return tl.ReturnType("SCTR");
+                        return new Tile("SCTR");
                     else if (BLCorner == symbols[1] || BLCorner == symbols[2])
-                        return tl.ReturnType("DCTR");
+                        return new Tile("DCTR");
                     else return null;
                 }
                 else if (tileLeft == '\0' && tileRight == symbols[3])
-                    return tl.ReturnType("DWT");
+                    return new Tile("DWT");
                 else if ((tileUp == '\0' && tileDown == symbols[3]) ||
                         (tileDown == '\0' && tileUp == symbols[3]))
-                    return tl.ReturnType("DWL");
+                    return new Tile("DWL");
                 else return null;
             }
             else if (tile == symbols[4])
-                return tl.ReturnType("X");
+                return new Tile("X");
             else return null;
         }
     }
