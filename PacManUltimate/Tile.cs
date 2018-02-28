@@ -252,7 +252,6 @@ namespace PacManUltimate
                                                         new Point(location.X + 15, location.Y + 8)});
         }
 
-        // Have no idea how I aligned this shit
         private void TRCurveDouble(Graphics g, Point location, Color color)
         {
             g.DrawCurve(new Pen(color, 2), new Point[] {new Point(location.X,location.Y),
@@ -263,7 +262,6 @@ namespace PacManUltimate
                                                         new Point(location.X + 9, location.Y + 15)});
         }
 
-        // Aligned to left
         private void TRCurveSingle(Graphics g, Point location, Color color)
         {
             g.DrawCurve(new Pen(color, 2), new Point[] {new Point(location.X,location.Y + 8),
@@ -271,7 +269,6 @@ namespace PacManUltimate
                                                         new Point(location.X + 6, location.Y + 15)});
         }
 
-        // Aligned to topleft border of the line
         private void BRCurveDouble(Graphics g, Point location, Color color)
         {
             g.DrawCurve(new Pen(color, 2), new Point[] {new Point(location.X + 8,location.Y),
@@ -282,7 +279,6 @@ namespace PacManUltimate
                                                         new Point(location.X, location.Y + 14)});
         }
 
-        // Aligned to top left
         private void BRCurveSingle(Graphics g, Point location, Color color)
         {
             g.DrawCurve(new Pen(color, 2), new Point[] {new Point(location.X + 6,location.Y),

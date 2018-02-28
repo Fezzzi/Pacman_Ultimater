@@ -336,13 +336,13 @@ namespace PacManUltimate
         }
 
         /// <summary>
-        /// Physically moves the entity and loads right image depending on the game situation and direction.
+        /// Loads right image depending on the game situation and direction.
         /// </summary>
         /// <param name="change">Boolean indicating whether the entity's direction has changed.</param>
         /// <param name="dx">X-axis change.</param>
         /// <param name="dy">Y-axis change.</param>
         /// <param name="entity">The observed entity.</param>
-        private void MovePicture
+        private void UpdatePicture
             (ref Tuple<int, int, PictureBox, Direction.nType, DefaultAI> entity)
         {
             // Normal situation.
@@ -367,7 +367,7 @@ namespace PacManUltimate
         {
             entity.Item3.Location = new Point(entity.Item1 * TileSizeInPxs - 6, entity.Item2 * TileSizeInPxs + 42);
             if (entity.Item4 != Direction.nType.DIRECTION)
-                MovePicture(ref entity);
+                UpdatePicture(ref entity);
         }
 
         /// <summary>
@@ -801,7 +801,7 @@ namespace PacManUltimate
         }
 
         /// <summary>
-        /// Gets translation deltas for entity specfiied by input index.
+        /// Gets translation deltas for entity specifyed by input index.
         /// </summary>
         /// <param name="index">Input index identifying entity.</param>
         /// <returns>Returns point of deltas in X and Y axes.</returns>
