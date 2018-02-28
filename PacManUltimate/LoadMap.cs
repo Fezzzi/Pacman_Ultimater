@@ -45,16 +45,21 @@ namespace PacManUltimate
         /// <returns>Return array of loaded tiles, translated to game's language (null in case of failure).</returns>
         private Tuple<Tile[][], int, Tuple<int, int>,System.Drawing.Color, List<System.Drawing.Point>> LdMap(string path, char[] symbols)
         {
-            Tuple<char[][],Tile[][],int, System.Drawing.Color, List<System.Drawing.Point>> map = LoadIt(path,symbols);
-            
-            if (map != null)
+            try
             {
-                // if LoadIt ended successfully preforms test of map's playability.
-                Tuple<bool, Tuple<int, int>> playable = IsPlayable(map.Item1, symbols, map.Item3);
-                if (playable.Item1)
-                    return new Tuple<Tile[][], int, Tuple<int, int>, System.Drawing.Color, List<System.Drawing.Point>>
-                        (map.Item2, map.Item3, playable.Item2, map.Item4, map.Item5);
+                Tuple<char[][], Tile[][], int, System.Drawing.Color, List<System.Drawing.Point>> map = LoadIt(path, symbols);
+
+                if (map != null)
+                {
+                    // if LoadIt ended successfully preforms test of map's playability.
+                    Tuple<bool, Tuple<int, int>> playable = IsPlayable(map.Item1, symbols, map.Item3);
+                    if (playable.Item1)
+                        return new Tuple<Tile[][], int, Tuple<int, int>, System.Drawing.Color, List<System.Drawing.Point>>
+                            (map.Item2, map.Item3, playable.Item2, map.Item4, map.Item5);
+                }
             }
+            catch (IndexOutOfRangeException) { }
+  
             // In case map is playable final Tuple is created and returned.
             // Null is returned to signalise something went wrong otherwise.
             return null;
@@ -79,10 +84,14 @@ namespace PacManUltimate
             map[0] = new char[MapWidthInTiles + 2];
             map[1] = new char[MapWidthInTiles + 2];
             tileMap[0] = new Tile[MapWidthInTiles];
+            var verticalTilesStack = new Stack<System.Drawing.Point>();
+            var horizontalTilesStack = new Stack<System.Drawing.Point>();
 
             // Reads first line and performs parsing on it to get game map color specified on the first line.
-            string firstLine = sr.ReadLine();
-            System.Drawing.Color? color = ParseColor(firstLine);
+            System.Drawing.Color color = System.Drawing.Color.Transparent;
+            int firstChar = sr.Peek();
+            if((char)firstChar == '#')
+                color = ParseColor(sr.ReadLine());
 
             // Reads whole text file symbol by symbol and saves it in Map array.
             while (!sr.EndOfStream)
@@ -114,18 +123,24 @@ namespace PacManUltimate
                         column > 1 ? tileMap[lineNum - 2][column - 2] : null, symbols
                         );
 
-                    //Quits whole reading in case the program was unable to identify tile
+                    // Quits whole reading in case the program was unable to identify tile.
                     if (tileMap[lineNum - 2][column - 1] == null)
                         return null;
 
                     if (tileMap[lineNum - 2][column - 1].tile == Tile.nType.POWERDOT)
                         pPArr.Add(new System.Drawing.Point(lineNum - 2, column - 1));
 
+                    // Saves Not Yet Decided Tiles for further reverse-order evaluation.
+                    if (tileMap[lineNum - 2][column - 1].tile == Tile.nType.VTBDTILE)
+                        verticalTilesStack.Push(new System.Drawing.Point(lineNum - 2, column - 1));
+                    if (tileMap[lineNum - 2][column - 1].tile == Tile.nType.HTBDTILE)
+                        horizontalTilesStack.Push(new System.Drawing.Point(lineNum - 2, column - 1));
+
                 }
                 if (column == 28 && !sr.EndOfStream)
                 {
-                    //Moves to another line and initialize new array for this line
-                    //Returns null in case the file has already reached 31 lines
+                    // Moves to another line and initialize new array for this line.
+                    // Returns null in case the file has already reached 31 lines.
                     column = 0;
                     lineNum++;
                     map[lineNum] = new char[MapWidthInTiles + 2];
@@ -136,7 +151,7 @@ namespace PacManUltimate
             }
             if(lineNum == MapHeightInTiles && column == MapWidthInTiles)
             {
-                //Separetly Transform to tile last line because reading loop has ended on 31st line
+                // Separetly Transform to tile last line because reading loop has ended on 31st line.
                 lineNum++;
                 for (int i = 1; i < column + 1; i++)
                 {
@@ -148,10 +163,60 @@ namespace PacManUltimate
                         map[lineNum - 2][i + 1], '\0', tileMap[lineNum - 3][i-1], 
                         i > 1 ? tileMap[lineNum - 2][i - 2] : null, symbols
                         );
+
+                    // Quits whole reading in case the program was unable to identify tile.
+                    if (tileMap[lineNum - 2][i - 1] == null)
+                        return null;
+
+                    // Saves Not Yet Decided Tiles for further reverse-order evaluation.
+                    if (tileMap[lineNum - 2][i - 1].tile == Tile.nType.VTBDTILE)
+                        verticalTilesStack.Push(new System.Drawing.Point(lineNum - 2, i - 1));
+                    if (tileMap[lineNum - 2][i - 1].tile == Tile.nType.HTBDTILE)
+                        horizontalTilesStack.Push(new System.Drawing.Point(lineNum - 2, i - 1));
                 }
             }
+
+            if (horizontalTilesStack.Count > 0 || verticalTilesStack.Count > 0)
+                if(!PerformReverseEvaluation(ref tileMap, horizontalTilesStack, verticalTilesStack))
+                    return null;
+
             return new Tuple<char[][],Tile[][],int,System.Drawing.Color,List<System.Drawing.Point>>
                 (map,tileMap,numOfDots,color == null ? System.Drawing.Color.Transparent : (System.Drawing.Color)color, pPArr);
+        }
+
+        /// <summary>
+        /// Iterates through not yet decided tiles in reverse order.
+        /// First in row neighbours with allready decided tiles and enables their evaluation.
+        /// </summary>
+        /// <param name="tileMap">Actual translated tile map.</param>
+        /// <param name="hStack">Horizontal stack of to be decided tiles.</param>
+        /// <param name="vStack">Vertical stack og to be decided tiles.</param>
+        /// <returns></returns>
+        private bool PerformReverseEvaluation(ref Tile[][] tileMap, Stack<System.Drawing.Point> hStack, Stack<System.Drawing.Point> vStack)
+        {
+            while (hStack.Count > 0)
+            {
+                System.Drawing.Point pt = hStack.Pop();
+                if (tileMap[pt.X][pt.Y + 1].tile == Tile.nType.TWALLDOUBLE || tileMap[pt.X][pt.Y + 1].tile == Tile.nType.BRCURVESINGLE)
+                    tileMap[pt.X][pt.Y].tile = Tile.nType.TWALLDOUBLE;
+                else if (tileMap[pt.X][pt.Y + 1].tile == Tile.nType.BWALLDOUBLE || tileMap[pt.X][pt.Y + 1].tile == Tile.nType.TRCURVESINGLE)
+                    tileMap[pt.X][pt.Y].tile = Tile.nType.BWALLDOUBLE;
+                else
+                    return false;
+            }
+
+            while (vStack.Count > 0)
+            {
+                System.Drawing.Point pt = vStack.Pop();
+                if (tileMap[pt.X + 1][pt.Y].tile == Tile.nType.RWALLDOUBLE || tileMap[pt.X + 1][pt.Y].tile == Tile.nType.BRCURVESINGLE)
+                    tileMap[pt.X][pt.Y].tile = Tile.nType.RWALLDOUBLE;
+                else if (tileMap[pt.X + 1][pt.Y].tile == Tile.nType.LWALLDOUBLE || tileMap[pt.X + 1][pt.Y].tile == Tile.nType.BLCURVESINGLE)
+                    tileMap[pt.X][pt.Y].tile = Tile.nType.LWALLDOUBLE;
+                else
+                    return false;
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -160,12 +225,11 @@ namespace PacManUltimate
         /// </summary>
         /// <param name="line">Readed first line of the file.</param>
         /// <returns>Color in which is game field to be displayed.</returns>
-        private System.Drawing.Color? ParseColor(string line)
+        private System.Drawing.Color ParseColor(string line)
         {
-            string[] lineWords = line.Split(new char[] { ':', ' ','#' }, StringSplitOptions.RemoveEmptyEntries);
-            if (lineWords[0] == "RANDOM")
+            string color = line.Substring(1);
+            if (color == "RANDOM")
                 return System.Drawing.Color.Transparent;
-            string color = lineWords.Length == 2 ? lineWords[1] : null;
 
             if (color.Length == 6)
                 try
@@ -180,7 +244,7 @@ namespace PacManUltimate
                 }
                 catch (FormatException)
                 {
-                    return null;
+                    return System.Drawing.Color.Transparent;
                 }
             else if (color.Length == 8)
                 try
@@ -196,9 +260,9 @@ namespace PacManUltimate
                 }
                 catch (FormatException)
                 {
-                    return null;
+                    return System.Drawing.Color.Transparent;
                 }
-            else return null;
+            else return System.Drawing.Color.Transparent;
         }
 
         /// <summary>
@@ -335,7 +399,7 @@ namespace PacManUltimate
             else if (tile == symbols[3])
             {
                 // Determines type of wall with use of adjacent symbols and tiles.
-                if (tileLeft == symbols[3] && tileRight == symbols[3] && 
+                if (tileLeft == symbols[3] && tileRight == symbols[3] &&
                     tileUp == symbols[3] && tileDown == symbols[3])
                 {
                     if (TLCorner == symbols[0] || TLCorner == symbols[1] || TLCorner == symbols[2])
@@ -349,7 +413,7 @@ namespace PacManUltimate
                     else return null;
                 }
                 else if ((tileLeft == symbols[3] || tileLeft == symbols[4]) &&
-                    (tileRight == symbols[3] || tileRight == symbols[4]) && 
+                    (tileRight == symbols[3] || tileRight == symbols[4]) &&
                     (tileUp != symbols[3] || tileDown != symbols[3]) || (tileRight == '\0' && tileUp != symbols[3] && tileDown != symbols[3]))
                 {
                     if (tileUp == symbols[3])
@@ -361,9 +425,9 @@ namespace PacManUltimate
                     else if (tileDown == symbols[1] || tileDown == symbols[2] || leftTile.tile == Tile.nType.TWALLDOUBLE || leftTile.tile == Tile.nType.BLCURVESINGLE)
                         return new Tile("DWT");
                     else if (tileUp == symbols[0])
-                        return new Tile("DWB");
+                        return new Tile("HTBDTILE");
                     else if (tileDown == symbols[0])
-                        return new Tile("DWT");
+                        return new Tile("HTBDTILE");
                     else return null;
                 }
                 else if (tileUp == symbols[3] && tileDown == symbols[3])
@@ -415,10 +479,10 @@ namespace PacManUltimate
                     else return null;
                 }
                 else if (tileLeft == '\0' && tileRight == symbols[3])
-                    return new Tile("DWT");
+                    return new Tile("HTBDTILE");
                 else if ((tileUp == '\0' && tileDown == symbols[3]) ||
                         (tileDown == '\0' && tileUp == symbols[3]))
-                    return new Tile("DWL");
+                    return new Tile("VTBDTILE");
                 else return null;
             }
             else if (tile == symbols[4])

@@ -23,14 +23,16 @@ namespace PacManUltimate
         Label up1, up2;
         Color MapColor;
 
-        const int MaxLives = 6;
-        const int FieldSizeInRows = 31;
-        const int FieldSizeInColumns = 28;
-        const int TileSizeInPxs = 16;
-        const int EntitiesSizeInPxs = 28;
+        const int PacTimer = 100;
+        const byte EntityCount = 5;
+        const byte MaxLives = 6;
+        const byte FieldSizeInRows = 31;
+        const byte FieldSizeInColumns = 28;
+        const byte TileSizeInPxs = 16;
+        const byte EntitiesSizeInPxs = 28;
         const int OpeningThemeLength = 4000;
-        const int pacmanInitialX = 13;
-        const int pacmanInitialY = 23;
+        const byte pacmanInitialX = 13;
+        const byte pacmanInitialY = 23;
 
         #endregion
 
@@ -49,8 +51,8 @@ namespace PacManUltimate
 
             if (color == Color.Transparent)
                 color = ChooseRandomColor();
-
-            MapColor = color;
+            if(color != Color.White)
+                MapColor = color;
             for (int i = 0; i < FieldSizeInRows; i++)
                 for (int j = 0; j < FieldSizeInColumns; j++)
                 {
@@ -58,10 +60,15 @@ namespace PacManUltimate
                 }
         }
 
+        /// <summary>
+        /// Creates deep copy of map array so the game can modify actual map but does not lose
+        /// information about original map.
+        /// </summary>
+        /// <param name="source">Original Map.</param>
+        /// <param name="destination">New Map.</param>
         private void DeepCopy(Tile[][] source, ref Tile[][] destination)
         {
-            //Creates deep copy of map array so the game can modify actual map but does not lose
-            //information about original map 
+            
             destination = new Tile[source.Count()][];
             for (int i = 0; i < source.Count(); i++)
             {
@@ -71,18 +78,31 @@ namespace PacManUltimate
             }
         }
 
+        /// <summary>
+        /// Physicaly places picture's control in the form.
+        /// </summary>
+        /// <param name="pic">Picture's control.</param>
+        /// <param name="image">Image to be assigned to picture's control.</param>
+        /// <param name="point">Picture's location.</param>
+        /// <param name="size">Picture's image size.</param>
         private void PlacePictureBox(PictureBox pic, Image image, Point point, Size size)
         {
-            //Physicaly places picture in the control
             pic.Image = image;
             pic.Location = point;
             pic.Size = size;
             this.Controls.Add(pic);
         }
 
+        /// <summary>
+        /// Physically places label's control in the form.
+        /// </summary>
+        /// <param name="label">Label's control.</param>
+        /// <param name="text">Text to be assigned to label's control.</param>
+        /// <param name="color">Assigned text's color.</param>
+        /// <param name="point">Label's location.</param>
+        /// <param name="font">Text's font.</param>
         private void PlaceLabel(Label label, string text, Color color, Point point, Font font)
         {
-            //Physically places label in the control
             label.Text = text;
             label.ForeColor = color;
             label.Location = point;
@@ -91,14 +111,16 @@ namespace PacManUltimate
             this.Controls.Add(label);
         }
 
+        /// <summary>
+        /// Function that loads all the game entities and presets all their default settings such as position, direction, etc...
+        /// </summary>
         private void LoadEntities()
         {
-            //Function that loads all the game entities and presets all their default settings such as position, direction, etc...
-            //This Data strucute consists of:
-            //  - Two numbers - x and y position on the map in Tiles
-            //  - Picturebox containing entity's image and its physical location
-            //  - Direction used later for entity's movement and selecting the right image
-            //  - Type of entity such as Player1, Player2, or all the kinds of enemy AI
+            //Entitie's Data strucute consists of:
+            //  - Two numbers - x and y position on the map in Tiles.
+            //  - Picturebox containing entity's image and its physical location.
+            //  - Direction used later for entity's movement and selecting the right image.
+            //  - Type of entity such as Player1, Player2, or all the other kinds of enemy's AI.
             DefaultAIs = new DefaultAI[4]
             {
                 new DefaultAI(DefaultAI.nType.HOSTILEATTACK, FieldSizeInColumns, FieldSizeInRows),
@@ -126,7 +148,6 @@ namespace PacManUltimate
                 };
 
             //Setting entities names for easy later manipulation and automatic image selection
-            const int EntityCount = 5;
             for (int i = 1; i <= EntityCount; i++)
                 Entities[i - 1].Item3.Name = "Entity" + i.ToString();
 
@@ -149,17 +170,20 @@ namespace PacManUltimate
                                 new Size(EntitiesSizeInPxs, EntitiesSizeInPxs));
         }
 
+        /// <summary>
+        /// Function that loads score labels and pacman lives.
+        /// </summary>
+        /// <param name="hp">Number of lives to be displayed.</param>
         private void LoadHud(int hp)
         {
-            //Function that loads score labels and pacman lives
             const int heartSizeInPx = 32;
             int lives = 0;
-
             up1 = new Label();
             PlaceLabel(up1, "1UP", Color.White,
                 new Point(3 * TileSizeInPxs, 0), new Font("Arial", 13, FontStyle.Bold));
             PlaceLabel(ScoreBox, Score > 0 ? Score.ToString() : "00", Color.White,
                 new Point(4 * TileSizeInPxs, 20), new Font("Arial", 13, FontStyle.Bold));
+
             //Selects labels depeding on game mode
             if (!Player2)
             {
@@ -190,6 +214,13 @@ namespace PacManUltimate
                 PacLives[i].Visible = false;
         }
 
+        /// <summary>
+        /// Procedure serving simply for initialization of variables at the map load up
+        /// and displaying loading screen.
+        /// </summary>
+        /// <param name="loading">Control of loading label.</param>
+        /// <param name="levelLabel">Control of level label.</param>
+        /// <param name="color">From file loaded color.</param>
         private void LoadingAndInit(Label loading, Label levelLabel, Color color)
         {
             if (Level == 0)
@@ -202,23 +233,23 @@ namespace PacManUltimate
                 Score = 0; //p1 score
                 Score2 = 0; //p2 score
                 SoundTick = 0; //used for sound players to take turns
-                munch = 0; //used for pacman to alternate between cloased and open mouth images
+                for (int i = 0; i < SoundPlayersCount; i++)
+                    SoundPlayers[i] = new WMPLib.WindowsMediaPlayer();
+
                 CollectedDots = 0;
                 Lives = 3;
                 Level++;
             }
 
-            //Procedure serving simply for initialization of variables at the map load up
-            //and displaying loading screen
             this.Controls.Clear();
             loading.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)));
             loading.AutoSize = true;
             loading.Visible = true;
-            PlaceLabel(loading, "Loading...", Color.Yellow, new Point(33, 199), new Font("Ravie", 30F, FontStyle.Bold));
+            PlaceLabel(loading, "Loading...", Color.Yellow, new Point(90, 159), new Font("Ravie", 30F, FontStyle.Bold));
             levelLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)));
             levelLabel.AutoSize = true;
             levelLabel.Visible = true;
-            PlaceLabel(levelLabel, "- Level " + Level.ToString() + " -", Color.Red, new Point(75, 280), new Font("Ravie", 20F, FontStyle.Bold));
+            PlaceLabel(levelLabel, "- Level " + Level.ToString() + " -", Color.Red, new Point(120, 350), new Font("Ravie", 20F, FontStyle.Bold));
             Refresh();
 
             keyPressed1 = false; //has player 1 pressed a valid button?
@@ -227,23 +258,30 @@ namespace PacManUltimate
             keyCountdown1 = 0;
             keyCountdown2 = 0;
             killed = false;
-            ticks = 0; //counts tick to enable pacman's slowdown throught the levels
-            FreeGhost = 1; //number of active ghosts moving through the map
-            GhostRelease = Player2 ? 130 / 3 : (260 - Level) / 3; //timer for ghost releasing - decreasing with level
+            Ticks = 0; // Counts tick to enable power pellets flashing and ghost flashing at the end of pac's excitement.
+            FreeGhost = 1; // Number of active ghosts moving through the map.
+            GhostRelease = Player2 ? 130 / 3 : (260 - Level) / 3; // Timer for ghost releasing - decreasing with level.
             EatEmTimer = 0; //timer for pacman's excitement
             PacLives = new PictureBox[MaxLives];
             for (int i = 0; i < MaxLives; i++)
                 PacLives[i] = new PictureBox();
+
+            // Yet empty fields of the array would redraw over top right corner of the map.
+            // This way it draw empty tile on pacman's initial position tile which is empty by definiton.
+            for (int i = 0; i < RDPSize; i++)
+                redrawPellets[i] = new Point(pacmanInitialY, pacmanInitialX);
 
             if (HighScore == -1)
             {
                 HighScoreClass hscr = new HighScoreClass();
                 HighScore = hscr.LoadHighScore();
             }
-
-            LoadHud(Lives - 2);
         }
 
+        /// <summary>
+        /// Returns random color by fixing one channel to max, another to min and the last one chooses randomly.
+        /// </summary>
+        /// <returns></returns>
         private Color ChooseRandomColor()
         {
             Random rndm = new Random();
@@ -264,18 +302,66 @@ namespace PacManUltimate
             }
         }
 
+        /// <summary>
+        /// Plays loading animation.
+        /// </summary>
+        private void PlayAnimation()
+        {
+            PictureBox[] Elements = new PictureBox[5];
+            Random rndm = new Random();
+            int elemCount = rndm.Next(1, 5);
+            int pacCount = 0;
+
+            for (int i = 1; i <= elemCount; i++)
+            {
+                Elements[i-1] = new PictureBox();
+                Elements[i-1].Image = Image.FromFile("../textures/Entity" + i.ToString() + "Left.png");
+                Elements[i-1].Size = new Size(EntitiesSizeInPxs, EntitiesSizeInPxs);
+                this.Controls.Add(Elements[i-1]);
+            }
+
+            for (int j = FieldSizeInColumns * TileSizeInPxs; j > -200; j -= 4)
+            {
+                ++pacCount;
+                for (int i = 0; i < elemCount; i++)
+                {
+                    Elements[i].Location = new Point(j + (i == 0 ? 0 : (i + 4) * (2 * TileSizeInPxs)), (FieldSizeInRows / 2 + 3) * TileSizeInPxs);
+                    if (i == 0 && pacCount % 4 == 0)
+                        if (pacCount % 8 == 0)
+                            Elements[i].Image = Image.FromFile("../Textures/PacStart.png");
+                        else
+                            Elements[i].Image = Image.FromFile("../textures/Entity1Left.png");
+                }
+
+                Refresh();
+                System.Threading.Thread.Sleep(10);
+            }
+
+            for (int i = 0; i < elemCount; i++)
+                this.Controls.Remove(Elements[i]);           
+        }
+
+        /// <summary>
+        /// Provides loading and general preparing of the game at the level start-up.
+        /// </summary>
+        /// <param name="restart">Whether triggered by lavel's restart or finish.</param>
         private async void PlayGame(bool restart)
         {
-            //provides loading and general preparing of the game at the level start-up
             Label loading = new Label();
             Label levelLabel = new Label();
             LoadingAndInit(loading, levelLabel, Map.Item4);
 
-            if (Music)
+            if (!restart)
             {
-                MusicPlayer.SoundLocation = "../sounds/pacman_intermission.wav";
-                MusicPlayer.PlayLooping();
+                if (Music)
+                {
+                    MusicPlayer.SoundLocation = "../sounds/pacman_intermission.wav";
+                    MusicPlayer.PlayLooping();
+                }
+                PlayAnimation();
             }
+
+            LoadHud(Lives - 2);
             // Gets the position of the first ghost located on the top of a ghost house.
             TopGhostInTiles = new Tuple<int, int>(Map.Item3.Item1 - 1, Map.Item3.Item2 - 1);
             LoadEntities();
@@ -288,12 +374,15 @@ namespace PacManUltimate
             {
                 CollectedDots = 0;
                 DeepCopy(Map.Item1, ref MapFresh);
+                if (Level <= 13)
+                    GhostUpdater.Interval -= 5;
             }
             RenderMap(MapFresh, Map.Item4);
 
             loading.Visible = false;
             levelLabel.Visible = false;
             Refresh();
+
             if (Music)
             {
                 MusicPlayer.SoundLocation = "../sounds/pacman_beginning.wav";
@@ -317,16 +406,21 @@ namespace PacManUltimate
                     MusicPlayer.PlayLooping();
                 }
                 // Starts updater that provides effect of main game cycle.
-                Updater.Start();
+                PacUpdater.Start();
+                GhostUpdater.Interval = Player2 ? (PacTimer + 40 - (Level > 13 ? 65 : Level * 5)) : PacUpdater.Interval + 10;
+                GhostUpdater.Start();
             }
         }
 
+        /// <summary>
+        /// Function that provides bridge between menu and the game.
+        /// Disables menu's functionality by assifning empty function to it.
+        /// Switches input (KeyDown) to game mode by turning gameOn.
+        /// Initializes Map and calls function that makes the game start.
+        /// </summary>
+        /// <param name="loadMap"></param>
         private void MakeItHappen(LoadMap loadMap)
         {
-            //Function that provides bridge between menu and the game
-            //disables menu functionality by setting it to menu
-            //switches input to game mode by turning gameOn
-            //Initializes Map and calls function that makes the game start
             Menu(() => { });    // Lambda expression - calls empty action <=> Does nothing
             Level = 0;
             gameOn = true;

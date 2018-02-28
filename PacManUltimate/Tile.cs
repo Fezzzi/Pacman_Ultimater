@@ -17,11 +17,12 @@ namespace PacManUltimate
 
         /// <summary>
         /// Enumerable for possible tile states.
+        /// HTBDTILE = Horizontal To Be Decided Tile (VTBDTILE <=> Vertical....).
         /// </summary>
         public enum nType { DOT, POWERDOT, FREE, GATE, LWALLDOUBLE, RWALLDOUBLE,
             TWALLDOUBLE, BWALLDOUBLE, LWALLSINGLE, RWALLSINGLE, TWALLSINGLE,
             BWALLSINGLE, TLCURVEDOUBLE, TRCURVEDOUBLE, BRCURVEDOUBLE, BLCURVEDOUBLE,
-            TLCURVESINGLE, TRCURVESINGLE, BRCURVESINGLE, BLCURVESINGLE, TILE};
+            TLCURVESINGLE, TRCURVESINGLE, BRCURVESINGLE, BLCURVESINGLE, HTBDTILE, VTBDTILE, TILE};
 
         /// <summary>
         /// Function for conversion between string representation of tile states and enumerable.
@@ -92,6 +93,12 @@ namespace PacManUltimate
                 case "SCBL":
                     this.tile = nType.BLCURVESINGLE;
                     break;
+                case "VTBDTILE":
+                    this.tile = nType.VTBDTILE;
+                    break;
+                case "HTBDTILE":
+                    this.tile = nType.HTBDTILE;
+                    break;
                 default:
                     this.tile = nType.TILE;
                     break;
@@ -160,6 +167,9 @@ namespace PacManUltimate
             }
         }
 
+        /// <summary>
+        /// Visualy frees tile by drawing rectangle over it, with the color of background.
+        /// </summary>
         public void FreeTile(Graphics g, Point location, Color bkgColor)
         {
             g.FillRectangle(new SolidBrush(bkgColor), new Rectangle(location.X, location.Y, 16, 16));
@@ -184,8 +194,8 @@ namespace PacManUltimate
 
         private void LWallDouble(Graphics g, Point location, Color color)
         {
-            g.FillRectangle(new SolidBrush(color), new Rectangle(location.X, location.Y, 2, 16));
-            g.FillRectangle(new SolidBrush(color), new Rectangle(location.X + 6, location.Y, 2, 16));
+            g.FillRectangle(new SolidBrush(color), new Rectangle(location.X, location.Y - 1, 2, 18));
+            g.FillRectangle(new SolidBrush(color), new Rectangle(location.X + 6, location.Y - 1, 2, 18));
         }
 
         private void LWallSingle(Graphics g, Point location, Color color)
@@ -195,8 +205,8 @@ namespace PacManUltimate
 
         private void RWallDouble(Graphics g, Point location, Color color)
         {
-            g.FillRectangle(new SolidBrush(color), new Rectangle(location.X + 14, location.Y, 2, 16));
-            g.FillRectangle(new SolidBrush(color), new Rectangle(location.X + 8, location.Y, 2, 16));
+            g.FillRectangle(new SolidBrush(color), new Rectangle(location.X + 14, location.Y - 1, 2, 18));
+            g.FillRectangle(new SolidBrush(color), new Rectangle(location.X + 8, location.Y - 1, 2, 18));
         }
 
         private void RWallSingle(Graphics g, Point location, Color color)
@@ -206,8 +216,8 @@ namespace PacManUltimate
 
         private void TWallDouble(Graphics g, Point location, Color color)
         {
-            g.FillRectangle(new SolidBrush(color), new Rectangle(location.X, location.Y, 16, 2));
-            g.FillRectangle(new SolidBrush(color), new Rectangle(location.X, location.Y + 6, 16, 2));
+            g.FillRectangle(new SolidBrush(color), new Rectangle(location.X - 1, location.Y, 18, 2));
+            g.FillRectangle(new SolidBrush(color), new Rectangle(location.X - 1, location.Y + 6, 18, 2));
         }
         private void TWallSingle(Graphics g, Point location, Color color)
         {
@@ -216,8 +226,8 @@ namespace PacManUltimate
 
         private void BWallDouble(Graphics g, Point location, Color color)
         {
-            g.FillRectangle(new SolidBrush(color), new Rectangle(location.X, location.Y + 14, 16, 2));
-            g.FillRectangle(new SolidBrush(color), new Rectangle(location.X, location.Y + 8, 16, 2));
+            g.FillRectangle(new SolidBrush(color), new Rectangle(location.X - 1, location.Y + 14, 18, 2));
+            g.FillRectangle(new SolidBrush(color), new Rectangle(location.X - 1, location.Y + 8, 18, 2));
         }
 
         private void BWallSingle(Graphics g, Point location, Color color)

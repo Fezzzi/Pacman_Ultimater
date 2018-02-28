@@ -60,6 +60,9 @@ namespace PacManUltimate
                 GameKeyDownHandler(e);
         }
 
+        /// <summary>
+        /// Function that checks whether the window was minimized and re-draws map on it's maximazition afterwards.
+        /// </summary>
         private void CheckMinimization(object sender, EventArgs e)
         {
             if (this.WindowState == FormWindowState.Minimized)
@@ -68,7 +71,6 @@ namespace PacManUltimate
                 bg.Render(g);
             else
                 wasMinimized = false;
-
         }
 
         #endregion
@@ -306,9 +308,10 @@ namespace PacManUltimate
         /// </summary>
         private void VS_Click(object sender, EventArgs e)
         {
+            Player2 = true;
             selectMap_Click(new object(), EventArgs.Empty);
-            if (gameOn)
-                Player2 = true;
+            if (!gameOn)
+                Player2 = false;
         }
 
         private void Settings_Click(object sender, EventArgs e)
@@ -418,6 +421,24 @@ namespace PacManUltimate
                         Menu(Menu_Start);
                     }
                 }
+                else if (TypedSymbols.Visible == true)
+                {
+                    // Branch accessible during typing of symbols used on Map to load.
+                    if (e.KeyCode == Keys.Back && symbols.Count() > 0)
+                    {
+                        symbols.RemoveAt(symbols.Count() - 1);
+                        TypedSymbols.Text = CharListToString(symbols);
+                    }
+                    if (!symbols.Contains((char)e.KeyValue) && e.KeyCode != Keys.Back)
+                    {
+                        symbols.Add((char)e.KeyValue);
+                        TypedSymbols.Text = CharListToString(symbols);
+                    }
+                    Refresh();
+                    const byte symbolsLimit = 5;
+                    if (symbols.Count() == symbolsLimit)
+                        selectMap_Click(new object(), EventArgs.Empty);
+                }
                 else if (e.KeyCode == Keys.W || e.KeyCode == Keys.Up)
                 {
                     if (menuLayer == mn.submenu && menuSelected.Item1 == mn.settings)
@@ -441,25 +462,6 @@ namespace PacManUltimate
                             MusicButton_Click(new object(), new EventArgs());
                         else
                             SoundsButton_Click(new object(), new EventArgs());
-                    }
-
-                    else if (TypedSymbols.Visible == true)
-                    {
-                        // Branch accessible during typing of symbols used on Map to load.
-                        if (e.KeyCode == Keys.Back && symbols.Count() > 0)
-                        {
-                            symbols.RemoveAt(symbols.Count() - 1);
-                            TypedSymbols.Text = CharListToString(symbols);
-                        }
-                        if (!symbols.Contains((char)e.KeyValue) && e.KeyCode != Keys.Back)
-                        {
-                            symbols.Add((char)e.KeyValue);
-                            TypedSymbols.Text = CharListToString(symbols);
-                        }
-                        Refresh();
-                        const byte symbolsLimit = 5;
-                        if (symbols.Count() == symbolsLimit)
-                            selectMap_Click(new object(), EventArgs.Empty);
                     }
             }
         }

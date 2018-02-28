@@ -38,7 +38,10 @@
             this.selectMap = new System.Windows.Forms.Label();
             this.OrgGame = new System.Windows.Forms.Label();
             this.Settings = new System.Windows.Forms.Label();
-            this.Updater = new System.Windows.Forms.Timer(this.components);
+            this.PacUpdater = new System.Windows.Forms.Timer(this.components);
+            this.GhostUpdater = new System.Windows.Forms.Timer(this.components);
+            this.PacSmoothTimer = new System.Windows.Forms.Timer(this.components);
+            this.GhostSmoothTimer = new System.Windows.Forms.Timer(this.components);
             this.EscLabel = new System.Windows.Forms.Label();
             this.HighScr = new System.Windows.Forms.Label();
             this.VS = new System.Windows.Forms.Label();
@@ -161,9 +164,25 @@
             this.Settings.MouseEnter += new System.EventHandler(this.Hover);
             this.Settings.Visible = false;
             // 
-            // Updater
+            // PacUpdater
             // 
-            this.Updater.Tick += new System.EventHandler(this.Updater_Tick);
+            this.PacUpdater.Tick += new System.EventHandler(this.PacUpdater_Tick);
+            this.PacUpdater.Interval = PacTimer;
+            //
+            // GhostUpdater
+            //
+            this.GhostUpdater.Tick += new System.EventHandler(this.GhostUpdater_Tick);
+            this.GhostUpdater.Interval = PacTimer + 40; // Will be decreased each level by 5 to reach maximal 75 at level 13
+            //
+            // PacSmoothTimer
+            //
+            this.PacSmoothTimer.Tick += new System.EventHandler(this.PacSmoothTimer_Tick);
+            this.PacSmoothTimer.Interval = (this.PacUpdater.Interval / ((TileSizeInPxs / 2) + 1) );
+            //
+            // GhostSmoothTimer
+            //
+            this.GhostSmoothTimer.Tick += new System.EventHandler(this.GhostSmoothTimer_Tick);
+            this.GhostSmoothTimer.Interval = (this.GhostUpdater.Interval / ((TileSizeInPxs / 2) + 1));
             // 
             // EscLabel
             // 
@@ -489,7 +508,10 @@
         private System.Windows.Forms.Label selectMap;
         private System.Windows.Forms.Label OrgGame;
         private System.Windows.Forms.Label Settings;
-        private System.Windows.Forms.Timer Updater;
+        private System.Windows.Forms.Timer PacUpdater;
+        private System.Windows.Forms.Timer GhostUpdater;
+        private System.Windows.Forms.Timer PacSmoothTimer;
+        private System.Windows.Forms.Timer GhostSmoothTimer;
         private System.Windows.Forms.Label EscLabel;
         private System.Windows.Forms.Label HighScr;
         private System.Windows.Forms.Label VS;

@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Threading;
+
 using System.Windows.Input;
 
 namespace PacManUltimate
@@ -16,26 +16,32 @@ namespace PacManUltimate
     {
         #region - VARIABLES Block -
 
-        int keyTicks = 5, Score, CollectedDots, munch, GhostsEaten, ticks;
+        int keyTicks = 5, Score, Ticks, CollectedDots, GhostsEaten;
         int SoundTick, Score2, FreeGhost, GhostRelease, EatEmTimer, keyCountdown1, keyCountdown2;
         bool keyPressed1, keyPressed2;
         bool extraLifeGiven, killed;
+        bool[] teleported = new bool[EntityCount];
         string SoundPath = System.IO.Path.GetFullPath("../sounds/");
-        WMPLib.WindowsMediaPlayer SoundPlayer = new WMPLib.WindowsMediaPlayer();
-        WMPLib.WindowsMediaPlayer SoundPlayer2 = new WMPLib.WindowsMediaPlayer();
+        WMPLib.WindowsMediaPlayer[] SoundPlayers = new WMPLib.WindowsMediaPlayer[SoundPlayersCount];
         System.Media.SoundPlayer MusicPlayer = new System.Media.SoundPlayer();
         Tile[][] MapFresh;
         Direction.nType NewDirection1 = Direction.nType.DIRECTION;
         Direction.nType NewDirection2 = Direction.nType.DIRECTION;
         Point[] redrawPellets = new Point[RDPSize];
+        Point[] EntitiesPixDeltas = new Point[EntityCount];
         byte RDPIndex = 0;
+        byte PacSmoothMoveStep;
+        byte GhostSmoothMoveStep;
 
+        const byte ghostFlashingStart = 30;
+        const byte SoundPlayersCount = 6;
         const byte RDPSize = 12;
         const int MaxLevel = 256;
         const int BonusLifeScore = 10000;
         const int PelletScore = 10;
         const int PowerPelletScore = 50;
         const int BaseEatEmTimer = 100;
+        const int ghostEatBaseScore = 200;
         const int BaseGhostReleaseTimer = 260;
         const byte GhostAccLimLevel = 30;
         const byte ghostMaxSpeed = 3;    // The smaller the number the faster the ghosts.
@@ -97,7 +103,8 @@ namespace PacManUltimate
         /// </summary>
         private void EndGame()
         {
-            Updater.Stop();
+            PacUpdater.Stop();
+            GhostUpdater.Stop();
             gameOn = false;
             MapFresh = null;
             if (Score >= HighScore)
@@ -120,13 +127,14 @@ namespace PacManUltimate
         /// <summary>
         /// Handles the event raised by unexcited pacman's contact with one of the ghosts.
         /// </summary>
-        private void KillPacman()
+        private async void KillPacman()
         {
             const int PauseBeforeDeath = 500;
             const int ExplodingTime = 600;
             const int P2ScoreForKill = 1500;
 
-            Updater.Stop();
+            PacUpdater.Stop();
+            GhostUpdater.Stop();
             if (Music)
             {
                 MusicPlayer.SoundLocation = "../sounds/pacman_death.wav";
@@ -136,10 +144,10 @@ namespace PacManUltimate
                 Score2 += P2ScoreForKill;
             Entities[0].Item3.Image = Image.FromFile("../textures/PacStart.png");
             Refresh();
-            Thread.Sleep(PauseBeforeDeath);
+            await Task.Delay(PauseBeforeDeath);
             Entities[0].Item3.Image = Image.FromFile("../textures/PacExplode.png");
             Refresh();
-            Thread.Sleep(ExplodingTime);
+            await Task.Delay(ExplodingTime);
             Lives--;
             Controls.Clear();
 
@@ -155,7 +163,7 @@ namespace PacManUltimate
         /// <param name="score">New Value to be set.</param>
         /// <param name="box">Box whose value is to be set.</param>
         private void UpdateHud(int? score, Label box)
-        {          
+        {
             box.Text = score.ToString();
         }
 
@@ -168,16 +176,16 @@ namespace PacManUltimate
         /// <returns>Returns boolean value indicating emptiness of the observed tile.</returns>
         private bool IsDirectionFree(int y, int x, Tuple<int, int, PictureBox, Direction.nType, DefaultAI> entity)
         {
-                int indexX = entity.Item1 + x;
-                int indexY = entity.Item2 + y;
+            int indexX = entity.Item1 + x;
+            int indexY = entity.Item2 + y;
 
-                if (indexX < 0 || indexX >= FieldSizeInColumns || indexY < 0 || indexY >= FieldSizeInRows
-                    || MapFresh[indexY][indexX].tile == Tile.nType.FREE
-                    || MapFresh[indexY][indexX].tile == Tile.nType.DOT
-                    || MapFresh[indexY][indexX].tile == Tile.nType.POWERDOT)
-                    return true;
-                else
-                    return false;
+            if (indexX < 0 || indexX >= FieldSizeInColumns || indexY < 0 || indexY >= FieldSizeInRows
+                || MapFresh[indexY][indexX].tile == Tile.nType.FREE
+                || MapFresh[indexY][indexX].tile == Tile.nType.DOT
+                || MapFresh[indexY][indexX].tile == Tile.nType.POWERDOT)
+                return true;
+            else
+                return false;
         }
 
         /// <summary>
@@ -214,42 +222,6 @@ namespace PacManUltimate
         }
 
         /// <summary>
-        /// Physically moves the entity and loads right image depending on the game situation and direction.
-        /// </summary>
-        /// <param name="change">Boolean indicating whether the entity's direction has changed.</param>
-        /// <param name="dx">X-axis change.</param>
-        /// <param name="dy">Y-axis change.</param>
-        /// <param name="entity">The observed entity.</param>
-        private void MovePicture
-            (bool change, int dx, int dy, ref Tuple<int, int, PictureBox, Direction.nType, DefaultAI> entity)
-        {
-            const int ghostFlashingStart = 30;
-
-            if (entity.Item5.State != DefaultAI.nType.PLAYER1 && MapFresh[entity.Item2][entity.Item1].tile != Tile.nType.FREE)
-            {
-                redrawPellets[RDPIndex] = new Point(entity.Item2, entity.Item1);
-                ++RDPIndex;
-                RDPIndex %= RDPSize;
-            }
-
-            entity.Item3.Location = new Point((entity.Item3.Location.X + dx), (entity.Item3.Location.Y + dy));
-            if (change)
-            {
-                // Normal situation.
-                // Last Line of if statement ensures ghost flashing at the end of pacman excited mode
-                if (EatEmTimer <= 0 || entity.Item5.State == DefaultAI.nType.PLAYER1 ||
-                   (entity.Item5.State != DefaultAI.nType.EATEN && (munch % 3 == 0) && EatEmTimer < ghostFlashingStart))    
-                        entity.Item3.Image = Image.FromFile("../Textures/" + entity.Item3.Name + entity.Item4.ToString() + ".png");
-                // Entity has been eaten.
-                else if (entity.Item5.State == DefaultAI.nType.EATEN)
-                    entity.Item3.Image = Image.FromFile("../Textures/Eyes" + entity.Item4.ToString() + ".png");
-                // Pacman is in the excited mode - ghosts are vulnerable.
-                else
-                    entity.Item3.Image = Image.FromFile("../textures/CanBeEaten.png");
-            }
-        }
-
-        /// <summary>
         /// Combines entity's in-tiles movement with procedure handling its physicall movement and 
         /// right texture loading.
         /// </summary>
@@ -259,12 +231,20 @@ namespace PacManUltimate
         /// <param name="dX">Physicall X-axis change.</param>
         /// <param name="dY">Physicall Y-axis change.</param>
         /// <param name="entity">The observed entity.</param>
-        private void MoveEntity(bool change, int entX, int entY, int dX, int dY,
+        private void MoveEntity(bool change, int entX, int entY, int dX, int dY, byte entNum,
             ref Tuple<int, int, PictureBox, Direction.nType, DefaultAI> entity)
         {
             entity = new Tuple<int, int, PictureBox, Direction.nType, DefaultAI>
                             (entX, entY, entity.Item3, entity.Item4, entity.Item5);
-            MovePicture(change, dX, dY, ref entity);
+
+            if (entity.Item5.State != DefaultAI.nType.PLAYER1 && MapFresh[entity.Item2][entity.Item1].tile != Tile.nType.FREE)
+            {
+                redrawPellets[RDPIndex] = new Point(entity.Item2, entity.Item1);
+                ++RDPIndex;
+                RDPIndex %= RDPSize;
+            }
+
+            EntitiesPixDeltas[entNum] = new Point(dX, dY);
         }
 
         /// <summary>
@@ -272,48 +252,60 @@ namespace PacManUltimate
         /// in case of teleporting (is reverse move from the program's point of view).
         /// </summary>
         /// <param name="entity">The observed entity.</param>
-        private void MoveIt(ref Tuple<int, int, PictureBox, Direction.nType, DefaultAI> entity)
+        private void MoveIt(ref Tuple<int, int, PictureBox, Direction.nType, DefaultAI> entity, byte entNum)
         {
             switch (entity.Item4)
             {
                 case Direction.nType.LEFT:
                     if (entity.Item1 > 0)
-                        MoveEntity(true, entity.Item1 - 1, entity.Item2, -TileSizeInPxs, 0, ref entity);
+                    {
+                        teleported[entNum] = false;
+                        MoveEntity(true, entity.Item1 - 1, entity.Item2, -TileSizeInPxs, 0, entNum, ref entity);
+                    }
                     else
-                        MoveEntity(false, FieldSizeInColumns - 1, entity.Item2, (FieldSizeInColumns - 1) * TileSizeInPxs, 0, ref entity);
+                    {
+                        teleported[entNum] = true;
+                        MoveEntity(false, FieldSizeInColumns - 1, entity.Item2, (FieldSizeInColumns - 1) * TileSizeInPxs, 0, entNum, ref entity);
+                    }
                     break;
                 case Direction.nType.RIGHT:
                     if (entity.Item1 < FieldSizeInColumns - 1)
-                        MoveEntity(true, entity.Item1 + 1, entity.Item2, TileSizeInPxs, 0, ref entity);
+                    {
+                        teleported[entNum] = false;
+                        MoveEntity(true, entity.Item1 + 1, entity.Item2, TileSizeInPxs, 0, entNum, ref entity);
+                    }
                     else
-                        MoveEntity(false, 0, entity.Item2, -(FieldSizeInColumns - 1) * TileSizeInPxs, 0, ref entity);
+                    {
+                        teleported[entNum] = true;
+                        MoveEntity(false, 0, entity.Item2, -(FieldSizeInColumns - 1) * TileSizeInPxs, 0, entNum, ref entity);
+                    }
                     break;
                 case Direction.nType.UP:
                     if (entity.Item2 > 0)
-                        MoveEntity(true, entity.Item1, entity.Item2 - 1, 0, -TileSizeInPxs, ref entity);
+                    {
+                        teleported[entNum] = false;
+                        MoveEntity(true, entity.Item1, entity.Item2 - 1, 0, -TileSizeInPxs, entNum, ref entity);
+                    }
                     else
-                        MoveEntity(false, entity.Item1, FieldSizeInRows - 1, 0, (FieldSizeInRows - 1) * TileSizeInPxs, ref entity);
+                    {
+                        teleported[entNum] = true;
+                        MoveEntity(false, entity.Item1, FieldSizeInRows - 1, 0, (FieldSizeInRows - 1) * TileSizeInPxs, entNum, ref entity);
+                    }
                     break;
                 case Direction.nType.DOWN:
                     if (entity.Item2 < FieldSizeInRows - 1)
-                        MoveEntity(true, entity.Item1, entity.Item2 + 1, 0, TileSizeInPxs, ref entity);
+                    {
+                        teleported[entNum] = false;
+                        MoveEntity(true, entity.Item1, entity.Item2 + 1, 0, TileSizeInPxs, entNum, ref entity);
+                    }
                     else
-                        MoveEntity(false, entity.Item1, 0, 0, -(FieldSizeInRows - 1) * TileSizeInPxs, ref entity);
+                    {
+                        teleported[entNum] = true;
+                        MoveEntity(false, entity.Item1, 0, 0, -(FieldSizeInRows - 1) * TileSizeInPxs, entNum, ref entity);
+                    }
                     break;
                 default:
                     break;
-            }
-
-            //Provides switching between pacman's direction image and closed mouth image
-            if (entity.Item5.State == DefaultAI.nType.PLAYER1)
-            {
-                const byte munchLimit = 4;
-                munch++;
-                if (entity.Item4 != Direction.nType.DIRECTION && munch >= munchLimit)
-                {
-                    entity.Item3.Image = Image.FromFile("../textures/PacStart.png");
-                    munch = 0;
-                }
             }
         }
 
@@ -332,7 +324,7 @@ namespace PacManUltimate
                     int indexY = y + (j == 0 ? i : 0);
                     int indexX = x + (j == 1 ? i : 0);
                     if (indexY < 0 || indexY >= FieldSizeInRows || indexX < 0 || indexX >= FieldSizeInColumns)
-                        ++turns;
+                        turns = 1;
                     else if (Map.Item1[indexY][indexX].tile == Tile.nType.FREE ||
                         Map.Item1[indexY][indexX].tile == Tile.nType.DOT ||
                         Map.Item1[indexY][indexX].tile == Tile.nType.POWERDOT)
@@ -344,88 +336,97 @@ namespace PacManUltimate
         }
 
         /// <summary>
+        /// Physically moves the entity and loads right image depending on the game situation and direction.
+        /// </summary>
+        /// <param name="change">Boolean indicating whether the entity's direction has changed.</param>
+        /// <param name="dx">X-axis change.</param>
+        /// <param name="dy">Y-axis change.</param>
+        /// <param name="entity">The observed entity.</param>
+        private void MovePicture
+            (ref Tuple<int, int, PictureBox, Direction.nType, DefaultAI> entity)
+        {
+            // Normal situation.
+            // Last Line of if statement ensures ghost flashing at the end of pacman excited mode
+            if (EatEmTimer <= 0 || entity.Item5.State == DefaultAI.nType.PLAYER1 
+                || (entity.Item5.State != DefaultAI.nType.EATEN && (Ticks % 3 == 0) && EatEmTimer < ghostFlashingStart))
+                entity.Item3.Image = Image.FromFile("../Textures/" + entity.Item3.Name + entity.Item4.ToString() + ".png");
+            // Entity has been eaten.
+            else if (entity.Item5.State == DefaultAI.nType.EATEN)
+                entity.Item3.Image = Image.FromFile("../Textures/Eyes" + entity.Item4.ToString() + ".png");
+            // Pacman is in the excited mode - ghosts are vulnerable.
+            else
+                entity.Item3.Image = Image.FromFile("../textures/CanBeEaten.png");
+        }
+
+        /// <summary>
+        /// Places picture to the place it should be according to it's tile indexes.
+        /// Finishes one cycle of smooth move and enables start of another cycle.
+        /// </summary>
+        /// <param name="entity">Entity whose picture is to be corrected.</param>
+        private void CorrectPicture(ref Tuple<int, int, PictureBox, Direction.nType, DefaultAI> entity)
+        {
+            entity.Item3.Location = new Point(entity.Item1 * TileSizeInPxs - 6, entity.Item2 * TileSizeInPxs + 42);
+            if (entity.Item4 != Direction.nType.DIRECTION)
+                MovePicture(ref entity);
+        }
+
+        /// <summary>
         /// Function that moves all of the entities and checks whether the pacman and a ghost have met.
         /// </summary>
-        private void UpdateMove()
-        { 
+        private void UpdateMove(bool isPacman)
+        {
             // Direction of entities controlled by players are updated via newDirection variables.
             // Direction of UI entities is set through AI algorithms.
-
-            const int ghostEatBaseScore = 200;
-            if (NewDirection1 != Direction.nType.DIRECTION)
-                SetToMove(ref NewDirection1, ref Entities[0]);
-            if (NewDirection2 != Direction.nType.DIRECTION)
-                SetToMove(ref NewDirection2, ref Entities[1]);
-
-            for (int i = 0; i <= FreeGhost; i++)
+            if (isPacman)
             {
-                // if statemnt causes each odd turn to be skipped during pacman's excitemnt
-                // causing ghosts to slow down to half of the pacman's speed.
-                if ((i == 0 || (EatEmTimer <= 0 || (EatEmTimer > 0 && munch % 2 == 1))) && !(i == 0 && ticks == 0))
-                {                   
-                    if ((i > 0 && !Player2) || i > 1)
-                    {
-                        // if entity is AI, creates new instance with direction selected by AI algorithm.
-                        if (Entities[i].Item4 == Direction.nType.DIRECTION || IsAtCrossroad(Entities[i].Item1, Entities[i].Item2))
-                            Entities[i] = new Tuple<int, int, PictureBox, Direction.nType, DefaultAI>
-                                (
-                                Entities[i].Item1,
-                                Entities[i].Item2,
-                                Entities[i].Item3,
-                                Entities[i].Item5.NextStep
-                                    (
-                                    new Tuple<int, int>(Entities[i].Item1, Entities[i].Item2),
-                                    Entities[i].Item5.State == DefaultAI.nType.EATEN ?
-                                        TopGhostInTiles 
-                                        : new Tuple<int, int>(Entities[0].Item1, Entities[0].Item2), 
-                                    Entities[i].Item4, Map.Item1), Entities[i].Item5);
-                    }
-                    CanMove(ref Entities[i]);
-                    MoveIt(ref Entities[i]);
-                }
+                if (NewDirection1 != Direction.nType.DIRECTION)
+                    SetToMove(ref NewDirection1, ref Entities[0]);
 
-                // Checks if distance in tiles between pacman and entity is smaller or equal 1.
-                if (i > 0 &&
-                    (Math.Abs(Entities[i].Item1 - Entities[0].Item1) + Math.Abs(Entities[i].Item2 - Entities[0].Item2)) <= 1)
+                // Places picture to the place it should be according to it's tile indexes.
+                // Finishes one cycle of smooth move and enables start of another cycle.
+                CorrectPicture(ref Entities[0]);
+
+                CanMove(ref Entities[0]);
+                MoveIt(ref Entities[0], 0);
+            }
+            else
+            {
+                if (NewDirection2 != Direction.nType.DIRECTION)
+                    SetToMove(ref NewDirection2, ref Entities[1]);
+
+                for (byte i = 1; i <= FreeGhost; i++)
                 {
-                    if (EatEmTimer <= 0)
-                    {
-                        KillPacman();
-                        killed = true;
-                        return;
-                    }
-                    // In case of pacman's excitemnet and if the ghost is not already eaten
-                    // changes the ghost's state to eaten and increases player's score.
-                    else if (Entities[i].Item5.State != DefaultAI.nType.EATEN)
-                    {
-                        if (Sound)
-                        {
-                            SoundPlayer2.URL = SoundPath + "pacman_eatghost.wav";
-                            SoundPlayer2.controls.play();
-                        }
-                        if (Music)
-                        {
-                            MusicPlayer.SoundLocation = "../sounds/pacman_eatensiren.wav";
-                            MusicPlayer.PlayLooping();
-                        }
-                        SoundTick = 2;
-                        GhostsEaten++;
-                        Score += ghostEatBaseScore * GhostsEaten;
-                        UpdateHud(Score, ScoreBox);
-                        if(GhostsEaten == 4 && Lives < MaxLives - 1)
-                        {
-                            PacLives[Lives - 1].Visible = true;
-                            ++Lives;
-                            if (Sound)
-                            {
-                                SoundPlayer.URL = SoundPath + "pacman_extrapac.wav";
-                                SoundPlayer.controls.play();
-                            }
-                        }
-                        Entities[i].Item5.State = DefaultAI.nType.EATEN;
-                    }
+                    // Places picture to the place it should be according to it's tile indexes.
+                    // Finishes one cycle of smooth move and enables start of another cycle.
+                    CorrectPicture(ref Entities[i]);
+
+                    // if entity is AI, creates new instance with direction selected by AI algorithm.
+                    if (!Player2 || i > 1 && (Entities[i].Item4 == Direction.nType.DIRECTION || IsAtCrossroad(Entities[i].Item1, Entities[i].Item2)))
+                        Entities[i] = new Tuple<int, int, PictureBox, Direction.nType, DefaultAI>
+                            (Entities[i].Item1,
+                             Entities[i].Item2,
+                             Entities[i].Item3,
+                             Entities[i].Item5.NextStep(new Tuple<int, int>(Entities[i].Item1, Entities[i].Item2),
+                                                        Entities[i].Item5.State == DefaultAI.nType.EATEN ? TopGhostInTiles
+                                                               : new Tuple<int, int>(Entities[0].Item1, Entities[0].Item2),
+                                                        Entities[i].Item4, Map.Item1),
+                             Entities[i].Item5);
+
+                    CanMove(ref Entities[i]);
+                    MoveIt(ref Entities[i], i);                   
                 }
             }
+        }
+
+        /// <summary>
+        /// Playes sound specified as parameter with current soundplayer and moves to another one.
+        /// </summary>
+        /// <param name="file">Sounds name.</param>
+        private void PlayWithSoundPlayer(string file)
+        {
+            SoundPlayers[SoundTick].URL = SoundPath + file;
+            SoundPlayers[SoundTick].controls.play();
+            SoundTick = (SoundTick + 1) % SoundPlayersCount;
         }
 
         /// <summary>
@@ -448,6 +449,8 @@ namespace PacManUltimate
                         Entities[i].Item5.State = (Player2 && i == 1 ? DefaultAI.nType.PLAYER2 : DefaultAIs[i - 1].State);
                     GhostsEaten = 0;
                 }
+                GhostUpdater.Interval = Player2 ? (PacTimer + 40 - (Level > 13 ? 65 : Level * 5)) : PacUpdater.Interval + 10;
+                GhostSmoothTimer.Interval = GhostUpdater.Interval / ((TileSizeInPxs / 2) + 1);
                 EatEmTimer = 0;
             }
         }
@@ -464,19 +467,7 @@ namespace PacManUltimate
             {
                 if (Sound)
                 {
-                    SoundTick++;
-                    if (SoundTick >= 4 || SoundPlayer.playState != WMPLib.WMPPlayState.wmppsPlaying)
-                        SoundTick = 0;
-                    if (SoundTick == 0 && (Score < BonusLifeScore || Score > BonusLifeScore + 100))
-                    {
-                        SoundPlayer.URL = SoundPath + "pacman_chomp.wav";
-                        SoundPlayer.controls.play();
-                    }
-                    else if (SoundTick == 2 && (Score < BonusLifeScore || Score > BonusLifeScore + 100))
-                    {
-                        SoundPlayer2.URL = SoundPath + "pacman_chomp.wav";
-                        SoundPlayer2.controls.play();
-                    }
+                    PlayWithSoundPlayer("pacman_chomp.wav");
                 }
                 CollectedDots++;
                 if (MapFresh[Entities[0].Item2][Entities[0].Item1].tile == Tile.nType.DOT)
@@ -492,6 +483,8 @@ namespace PacManUltimate
                     //Pacman's excitemnt lasts shorter each level
                     EatEmTimer = Player2 ? (3 * BaseEatEmTimer) / 4 : BaseEatEmTimer - Level;
                     GhostsEaten = 0;
+                    GhostUpdater.Interval = (PacTimer + 40 - (Level > 13 ? 65 : Level * 5)) * 2;
+                    GhostSmoothTimer.Interval = GhostUpdater.Interval / ((TileSizeInPxs / 2) + 1);
                     //Return all of the ghost to normal state to be able to be eaten again later
                     for (int i = 1; i < 5; i++)
                         Entities[i].Item5.State = DefaultAI.nType.CANBEEATEN;
@@ -499,7 +492,7 @@ namespace PacManUltimate
 
                 //Delets pellet from the tile
                 MapFresh[Entities[0].Item2][Entities[0].Item1].tile = Tile.nType.FREE;
-                MapFresh[Entities[0].Item2][Entities[0].Item1].FreeTile(bg.Graphics, new Point(Entities[0].Item1 * TileSizeInPxs, 
+                MapFresh[Entities[0].Item2][Entities[0].Item1].FreeTile(bg.Graphics, new Point(Entities[0].Item1 * TileSizeInPxs,
                                                                                               (Entities[0].Item2 + 3) * TileSizeInPxs), this.BackColor);
 
                 if (Score > HighScore)
@@ -530,41 +523,84 @@ namespace PacManUltimate
         }
 
         /// <summary>
+        /// Checks if distance in tiles between pacman and each entity is bigger than 1.
+        /// </summary>
+        private void CheckCollision()
+        {
+            for (int i = 1; i < EntityCount; i++)
+                if ((Math.Abs(Entities[i].Item1 - Entities[0].Item1) + Math.Abs(Entities[i].Item2 - Entities[0].Item2)) <= 1)
+                {
+                    if (EatEmTimer <= 0)
+                    {
+                        KillPacman();
+                        killed = true;
+                        return;
+                    }
+                    // In case of pacman's excitemnet and if the ghost is not already eaten
+                    // changes the ghost's state to eaten and increases player's score.
+                    else if (Entities[i].Item5.State != DefaultAI.nType.EATEN)
+                    {
+                        if (Sound)
+                            PlayWithSoundPlayer("pacman_eatghost.wav");
+                        if (Music)
+                        {
+                            MusicPlayer.SoundLocation = "../sounds/pacman_eatensiren.wav";
+                            MusicPlayer.PlayLooping();
+                        }
+                        GhostsEaten++;
+                        Score += ghostEatBaseScore * GhostsEaten;
+                        UpdateHud(Score, ScoreBox);
+                        if (GhostsEaten == 4 && Lives < MaxLives - 1)
+                        {
+                            PacLives[Lives - 1].Visible = true;
+                            ++Lives;
+                            if (Sound)
+                                PlayWithSoundPlayer("pacman_extrapac.wav");
+                        }
+                        Entities[i].Item5.State = DefaultAI.nType.EATEN;
+                    }
+                }
+        }
+
+        /// <summary>
         /// Body of the update mechanism. Selectivly updates entities and map.
         /// </summary>
-        private void UpdateGame()
+        private void UpdateGame(bool isPacman)
         {
-            ticks++;
-            if ((Level < GhostAccLimLevel && ticks > ghostBaseSpeed - (Level / 2)) || (Level >= GhostAccLimLevel && ticks > ghostMaxSpeed))
-                ticks = 0;
-            UpdateMove();
+            UpdateMove(isPacman);
+            CheckCollision();
+
             if (killed)
             {
                 killed = false;
                 return;
             }
-            UpdateEatEmTimer();
-            UpdateEatPellet();    
-                 
-            //Gives player one extra life at 10000pts
-            if (Score >= BonusLifeScore && !extraLifeGiven)
-            {
-                extraLifeGiven = true;
-                if (Sound)
-                {
-                    SoundPlayer.URL = SoundPath + "pacman_extrapac.wav";
-                    SoundPlayer.controls.play();
-                }
-                PacLives[Lives - 1].Visible = true;
-                ++Lives;
-            }
+            
+            if (isPacman)
+            { 
+                UpdateEatEmTimer();
+                UpdateEatPellet();
 
-            //Handles successive ghost releasing
-            if (GhostRelease <= 0 && FreeGhost < 4)
-                SetGhostFree(FreeGhost + 1);
-            if (GhostRelease > 0 && FreeGhost < 4)
-                GhostRelease --;
-            bg.Render(g);
+                // Gives player one extra life at reaching score of BonusLifeScore.
+                if (Score >= BonusLifeScore && !extraLifeGiven)
+                {
+                    extraLifeGiven = true;
+                    if (Sound)
+                        PlayWithSoundPlayer("pacman_extrapac.wav");
+                    PacLives[Lives - 1].Visible = true;
+                    ++Lives;
+                }
+                bg.Render(g);
+            }
+            else
+            {
+                Ticks = ++Ticks % 6;
+                //Handles successive ghost releasing
+                if (GhostRelease <= 0 && FreeGhost < 4)
+                    SetGhostFree(FreeGhost + 1);
+                if (GhostRelease > 0 && FreeGhost < 4)
+                    GhostRelease--;
+            }
         }
 
         /// <summary>
@@ -572,7 +608,7 @@ namespace PacManUltimate
         /// </summary>
         private void Blink()
         {
-            if (ticks % 3 == 0)
+            if (Ticks % 3 == 0)
             {
                 this.up1.Visible = false;
                 if (Player2)
@@ -588,8 +624,8 @@ namespace PacManUltimate
             for (int i = 0; i < Map.Item5.Count; ++i)
                 if (MapFresh[Map.Item5[i].X][Map.Item5[i].Y].tile == Tile.nType.POWERDOT)
                 {
-                    if (ticks % 2 == 0)
-                        MapFresh[Map.Item5[i].X][Map.Item5[i].Y].FreeTile(bg.Graphics, new Point(Map.Item5[i].Y * TileSizeInPxs, 
+                    if (Ticks % 2 == 0)
+                        MapFresh[Map.Item5[i].X][Map.Item5[i].Y].FreeTile(bg.Graphics, new Point(Map.Item5[i].Y * TileSizeInPxs,
                                                                                                 (Map.Item5[i].X + 3) * TileSizeInPxs), this.BackColor);
                     else
                         MapFresh[Map.Item5[i].X][Map.Item5[i].Y].DrawTile(bg.Graphics, new Point(Map.Item5[i].Y * TileSizeInPxs,
@@ -631,7 +667,7 @@ namespace PacManUltimate
         /// <summary>
         /// Topmost layer of instructions executed each frame.
         /// </summary>
-        private void GameLoop()
+        private void GameLoop(bool pacman)
         {
             // In case that one of the players have pushed a valid key, countdown, which represents 
             // the number tiles remaining until the information about the pushed button is lost, is started.
@@ -647,7 +683,7 @@ namespace PacManUltimate
             }
 
             // Calls main Update function.
-            UpdateGame();
+            UpdateGame(pacman);
 
             // Function for key countdown.
             KeyCountAndDir(ref NewDirection1, ref keyCountdown1);
@@ -658,6 +694,18 @@ namespace PacManUltimate
             // In such case in relation to level and game mode, plays another level or ends the game.
             if (CollectedDots >= Map.Item2)
                 EndLevel();
+           
+            if (pacman)
+            {
+                this.PacSmoothTimer.Start();
+                PacSmoothMoveStep = 0;
+            }
+            else
+            {
+                this.GhostSmoothTimer.Start();
+                GhostSmoothMoveStep = 0;
+            }
+            
         }
 
         /// <summary>
@@ -665,8 +713,10 @@ namespace PacManUltimate
         /// </summary>
         private async void EndLevel()
         {
-            Updater.Stop();
-            for (int i = 0; i < 10; i++)
+            PacUpdater.Stop();
+            GhostUpdater.Stop();
+            MusicPlayer.Stop();
+            for (int i = 0; i < 8; i++)
             {
                 if (i % 2 == 0)
                     RenderMap(MapFresh, Color.White);
@@ -687,15 +737,101 @@ namespace PacManUltimate
 
         /// <summary>
         /// Creates ilusion of game loop.
-        /// Handles event raised by timer's periodical ticks.
+        /// Handles event raised by pacman's timer's periodical ticks.
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void Updater_Tick(object sender, EventArgs e)
+        private void PacUpdater_Tick(object sender, EventArgs e)
         {
-            GameLoop();
+            this.PacSmoothTimer.Stop();
+            GameLoop(true);
         }
-    
+
+        /// <summary>
+        /// Creates ilusion of game loop.
+        /// Handles event raised by ghosts' timer's periodical ticks.
+        /// </summary>
+        private void GhostUpdater_Tick(object sender, EventArgs e)
+        {
+            this.GhostSmoothTimer.Stop();
+            GameLoop(false);
+        }
+
+        /// <summary>
+        /// Handles animating of pacman's translation between old and the new tile.
+        /// </summary>
+        private void PacSmoothTimer_Tick(object sender, EventArgs e)
+        {
+            ++PacSmoothMoveStep;
+            if (Entities[0].Item4 != Direction.nType.DIRECTION && !teleported[0])
+            {
+                Point d = GetDeltas(0);
+
+                // Last part of smooth move is done at the beggining of ueach update cycle.
+                if (EntitiesPixDeltas[0].X <= 1 && EntitiesPixDeltas[0].Y <= 1 && EntitiesPixDeltas[0].X >= -1 && EntitiesPixDeltas[0].Y >= -1)
+                    PacSmoothTimer.Stop();
+                else
+                    Entities[0].Item3.Location = new Point((Entities[0].Item3.Location.X + d.X), (Entities[0].Item3.Location.Y + d.Y));
+
+                if (PacSmoothMoveStep % 2 == 0)
+                {
+                    if (PacSmoothMoveStep % 4 == 0)
+                        Entities[0].Item3.Image = Image.FromFile("../textures/PacStart.png");
+                    else
+                        Entities[0].Item3.Image = Image.FromFile("../Textures/" + Entities[0].Item3.Name + Entities[0].Item4.ToString() + ".png");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Handles animating of ghosts' translation between old and the new tile.
+        /// </summary>
+        private void GhostSmoothTimer_Tick(object sender, EventArgs e)
+        {
+            ++GhostSmoothMoveStep;
+            for (byte i = 1; i <= FreeGhost; i++)
+                if (Entities[i].Item4 != Direction.nType.DIRECTION && !teleported[i])
+                {
+                    Point d = GetDeltas(i);
+
+                    // Last part of smooth move is done at the beggining of ueach update cycle.
+                    if (EntitiesPixDeltas[i].X <= 1 && EntitiesPixDeltas[i].Y <= 1 && EntitiesPixDeltas[i].X >= -1 && EntitiesPixDeltas[i].Y >= -1)
+                        GhostSmoothTimer.Stop();
+                    else
+                        Entities[i].Item3.Location = new Point((Entities[i].Item3.Location.X + d.X), (Entities[i].Item3.Location.Y + d.Y));
+                }
+        }
+
+        /// <summary>
+        /// Gets translation deltas for entity specfiied by input index.
+        /// </summary>
+        /// <param name="index">Input index identifying entity.</param>
+        /// <returns>Returns point of deltas in X and Y axes.</returns>
+        private Point GetDeltas(byte index)
+        {
+            int dX = 0, dY = 0;
+            if (EntitiesPixDeltas[index].X >= 2)
+            {
+                dX = 2;
+                EntitiesPixDeltas[index].X -= 2;
+            }
+            else if (EntitiesPixDeltas[index].X <= -2)
+            {
+                dX = -2;
+                EntitiesPixDeltas[index].X += 2;
+            }
+            else if (EntitiesPixDeltas[index].Y >= 2)
+            {
+                dY = 2;
+                EntitiesPixDeltas[index].Y -= 2;
+            }
+            else if (EntitiesPixDeltas[index].Y <= -2)
+            {
+                dY = -2;
+                EntitiesPixDeltas[index].Y += 2;
+            }
+
+            return new Point(dX, dY);
+        }
+
         #endregion
     }
 }

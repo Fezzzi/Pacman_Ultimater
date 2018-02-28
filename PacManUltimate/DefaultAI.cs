@@ -22,6 +22,12 @@ namespace PacManUltimate
         public nType State;
         private int fieldSizeInColumns, fieldSizeInRows;
 
+        /// <summary>
+        /// Class's constructor.
+        /// </summary>
+        /// <param name="state">Entity's state such as Player1, Player2, Hostile....</param>
+        /// <param name="tsc">Tile Map Size in Columns.</param>
+        /// <param name="tsr">Tile Map Size in Rows.</param>
         public DefaultAI(nType state, int tsc, int tsr)
         {
             State = state;
@@ -127,11 +133,28 @@ namespace PacManUltimate
                 {
                     int deltaX = (j == 0 ? i : 0);
                     int deltaY = (j == 1 ? i : 0);
-                    if(position.Item1 + deltaY < 0 || position.Item1 + deltaY >= fieldSizeInColumns
-                       || position.Item2 + deltaX < 0 || position.Item2 + deltaX >= fieldSizeInRows)
+                    if (position.Item1 + deltaY < 0)
+                    {
+                        if (direction == Direction.nType.LEFT)
                             possibilities.Add(new Tuple<int, int>(deltaX, deltaY));
+                    }
+                    else if (position.Item1 + deltaY >= fieldSizeInColumns)
+                    {
+                        if (direction == Direction.nType.RIGHT)
+                            possibilities.Add(new Tuple<int, int>(deltaX, deltaY));
+                    }
+                    else if (position.Item2 + deltaX < 0)
+                    {
+                        if (direction == Direction.nType.UP)
+                            possibilities.Add(new Tuple<int, int>(deltaX, deltaY));
+                    }
+                    else if (position.Item2 + deltaX >= fieldSizeInRows)
+                    {
+                        if (direction == Direction.nType.DOWN)
+                            possibilities.Add(new Tuple<int, int>(deltaX, deltaY));
+                    }
                     else if (CanAdd(map[position.Item2 + deltaX][position.Item1 + deltaY])
-                             && (deltaX != back.Item1 || deltaY != back.Item2))
+                            && (deltaX != back.Item1 || deltaY != back.Item2))
                                 possibilities.Add(new Tuple<int, int>(deltaX, deltaY));
                 }
             }
