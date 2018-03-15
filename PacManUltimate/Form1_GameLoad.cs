@@ -305,7 +305,7 @@ namespace PacManUltimate
         /// <summary>
         /// Plays loading animation.
         /// </summary>
-        private void PlayAnimation()
+        private async Task PlayAnimation()
         {
             PictureBox[] Elements = new PictureBox[5];
             Random rndm = new Random();
@@ -334,7 +334,7 @@ namespace PacManUltimate
                 }
 
                 Refresh();
-                System.Threading.Thread.Sleep(10);
+                await Task.Delay(10);
             }
 
             for (int i = 0; i < elemCount; i++)
@@ -358,7 +358,8 @@ namespace PacManUltimate
                     MusicPlayer.SoundLocation = "../sounds/pacman_intermission.wav";
                     MusicPlayer.PlayLooping();
                 }
-                PlayAnimation();
+                Task playAnim = PlayAnimation();
+                await playAnim;
             }
 
             LoadHud(Lives - 2);
