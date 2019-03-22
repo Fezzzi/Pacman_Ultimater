@@ -22,7 +22,8 @@ C:\Users\Fezzi\Documents\MATFYZ\GitHub\Pacman_Ultimate\PacManUltimate\bin\Debug\
 C:\Users\Fezzi\Documents\MATFYZ\GitHub\Pacman_Ultimate\PacManUltimate\bin\Debug\PacManUltimate.pdb
 C:\Users\Fezzi\Documents\MATFYZ\GitHub\Pacman_Ultimate\PacManUltimate\bin\Debug\Interop.WMPLib.dll
 C:\Users\Fezzi\Documents\MATFYZ\GitHub\Pacman_Ultimate\PacManUltimate\bin\Debug\AxInterop.WMPLib.dll
-C:\Users\Fezzi\Documents\MATFYZ\GitHub\Pacman_Ultimate\PacManUltimate\obj\Debug\PacManUltimate.csprojResolveAssemblyReference.cache
 C:\Users\Fezzi\Documents\MATFYZ\GitHub\Pacman_Ultimate\PacManUltimate\obj\Debug\PacManUltimate.PacManUltimate.resources
 C:\Users\Fezzi\Documents\MATFYZ\GitHub\Pacman_Ultimate\PacManUltimate\obj\Debug\PacManUltimate.Properties.Resources.resources
 C:\Users\Fezzi\Documents\MATFYZ\GitHub\Pacman_Ultimate\PacManUltimate\obj\Debug\PacManUltimate.csproj.GenerateResource.Cache
+C:\Users\Fezzi\Documents\MATFYZ\GitHub\Pacman_Ultimate\PacManUltimate\obj\Debug\PacManUltimate.csprojAssemblyReference.cache
+C:\Users\Fezzi\Documents\MATFYZ\GitHub\Pacman_Ultimate\PacManUltimate\obj\Debug\PacManUltimate.csproj.CoreCompileInputs.cache
